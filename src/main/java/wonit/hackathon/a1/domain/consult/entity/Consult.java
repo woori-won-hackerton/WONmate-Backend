@@ -1,9 +1,12 @@
 package wonit.hackathon.a1.domain.consult.entity;
 
 import tools.jackson.databind.JsonNode;
+import wonit.hackathon.a1.domain.consult.enums.ConsultType;
 import wonit.hackathon.a1.domain.consult.enums.ConsultationStatus;
 import wonit.hackathon.a1.domain.fccustomer.entity.FcCustomer;
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import lombok.AccessLevel;
@@ -11,12 +14,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import wonit.hackathon.a1.global.common.BaseEntity;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "consultations")
-public class Consult {
+public class Consult extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +36,11 @@ public class Consult {
 
     @Column(name = "purpose", columnDefinition = "text")
     private String purpose;
+
+    // 상담 종류
+    @Enumerated(EnumType.STRING)
+    @Column(name = "consult_type", nullable = false, length = 30)
+    private ConsultType consultType;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -50,6 +59,9 @@ public class Consult {
     @Column(name = "confirmed_at", columnDefinition = "timestamptz")
     private OffsetDateTime confirmedAt;
 
+    @Column(name = "memo_updated_at")
+    private LocalDateTime memoUpdatedAt;
+
     private Consult(
             FcCustomer fcCustomer,
             OffsetDateTime scheduledAt,
@@ -67,9 +79,29 @@ public class Consult {
         this.confirmedAt = confirmedAt;
     }
 
+    private Consult(
+            FcCustomer fcCustomer,
+            OffsetDateTime scheduledAt,
+            ConsultType consultType,
+            String purpose,
+            String memo,
+            JsonNode aiRecord,
+            OffsetDateTime confirmedAt
+    ) {
+        this.fcCustomer = Objects.requireNonNull(fcCustomer, "fcCustomer");
+        this.scheduledAt = scheduledAt;
+        this.consultType = Objects.requireNonNull(consultType, "consultType");
+        this.purpose = purpose;
+        this.status = ConsultationStatus.draft;
+        this.memo = memo;
+        this.aiRecord = aiRecord == null ? null : aiRecord.deepCopy();
+        this.confirmedAt = confirmedAt;
+    }
+
     public static Consult create(
             FcCustomer fcCustomer,
             OffsetDateTime scheduledAt,
+            ConsultType consultType,
             String purpose,
             String memo,
             JsonNode aiRecord,
@@ -78,6 +110,7 @@ public class Consult {
         return new Consult(
                 fcCustomer,
                 scheduledAt,
+                consultType,
                 purpose,
                 memo,
                 aiRecord,
@@ -85,7 +118,7 @@ public class Consult {
         );
     }
 
-    public void updateMemo(String memo) { this.memo = memo; }
+    public void updateMemo(String memo) { this.memo = memo;   this.memoUpdatedAt = LocalDateTime.now();}
 
     public void updatePurpose(String purpose) { this.purpose = purpose; }
 
@@ -106,4 +139,7 @@ public class Consult {
         this.scheduledAt = scheduledAt;
         this.confirmedAt = confirmedAt;
     }
+
+
+
 }

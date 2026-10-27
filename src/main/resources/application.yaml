@@ -1,3 +1,5 @@
+server:
+  port: 8081
 rag:
   embedding:
     # 최초 요청 실패 후 429/5xx에만 retries회 추가 시도한다. API 키는 설정에 직접 쓰지 않는다.
@@ -16,22 +18,24 @@ rag:
     chars-per-token: 1.5
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+
   application:
     name: a1
-  profiles:
-    default: local
-  config:
-    # 프로젝트 루트에서 실행할 때 로컬 .env를 읽는다. 시스템 환경 변수가 우선한다.
-    import: optional:file:.env[.properties]
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
-      # 구축된 스키마만 검증하며 시작 시 테이블 생성이나 변경을 수행하지 않는다.
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -42,17 +46,19 @@ spring:
       # db/rag의 SQL은 필요한 대상 DB에 명시적으로 실행한다.
       mode: never
       platform: postgres
+
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY}              # 🚨 키는 환경변수에서만 읽는다
+      api-key: ${OPENAI_API_KEY}
       chat:
         options:
           model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
-server:
-  port: 8081
 
-# The upstream model logs the full prompt at WARN when a response has no choices.
-# Keep document text and credentials out of framework diagnostic output as well.
-logging:
-  level:
-    org.springframework.ai.openai: ERROR
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration-seconds: 1800
+  issuer: cgv-api
+
+app:
+  briefing:
+    model: ${OPENAI_CHAT_MODEL:gpt-6-luna}

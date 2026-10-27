@@ -2,6 +2,7 @@ package wonit.hackathon.a1.domain.customerwiki.entity;
 
 import wonit.hackathon.a1.domain.customer.entity.Customer;
 import wonit.hackathon.a1.global.common.BaseEntity;
+
 import jakarta.persistence.*;
 import java.util.Objects;
 import lombok.AccessLevel;

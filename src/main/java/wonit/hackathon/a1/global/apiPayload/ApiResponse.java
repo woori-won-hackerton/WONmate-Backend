@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import wonit.hackathon.a1.global.code.BaseErrorCode;
-
+import wonit.hackathon.a1.global.code.GeneralSuccessCode;
 
 @Getter
 @AllArgsConstructor
@@ -26,6 +26,20 @@ public class ApiResponse<T> {
 
     @JsonProperty("error")
     private Object error;
+
+    //result가 있는 경우 성공 응답
+
+    public static <T> ApiResponse<T> onSuccess(String message,T result)
+    {
+        return new ApiResponse<>(true, GeneralSuccessCode.OK.getCode(),message,result,null);
+    }
+
+    //result 없는 경우 성공 응답
+    public static <T> ApiResponse<T> onSuccess(String message)
+    {
+        return new ApiResponse<>(true,GeneralSuccessCode.OK.getCode(),message,null,null);
+
+    }
 
     //실패 응답
     public static <T> ApiResponse<T> onFailure(BaseErrorCode errorCode, Object error)
