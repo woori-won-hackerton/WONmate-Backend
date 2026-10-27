@@ -14,8 +14,8 @@ import wonit.hackathon.a1.domain.insurance.entity.ProductChunk;
 import wonit.hackathon.a1.domain.insurance.entity.ProductDocument;
 import wonit.hackathon.a1.domain.insurance.enums.DocumentType;
 import wonit.hackathon.a1.domain.insurance.enums.IngestionStatus;
-import wonit.hackathon.a1.domain.insurance.repository.ProductChunkRepository;
-import wonit.hackathon.a1.domain.insurance.repository.ProductDocumentRepository;
+import wonit.hackathon.a1.repository.rag.ProductChunkRepository;
+import wonit.hackathon.a1.repository.rag.ProductDocumentRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -2,6 +2,8 @@
 
 PDFBox 3.0.8의 `Loader`와 `PDFTextStripper`를 사용한다. Spring 애플리케이션을 시작하지 않는 개발 전용 CLI이므로 DB 접속, 엔티티 저장, 임베딩 및 OpenAI API 호출이 없다.
 
+패키지 정리 후 `PdfExtractor`, `ArticleChunker`, `RagDebug`는 `wonit.hackathon.a1.rag`에 위치한다. `domain`에는 엔티티와 enum만 둔다. 3단계의 API·서비스·Repository·클라이언트·DTO는 각각 루트의 `controller/rag`, `service/rag`, `repository/rag`, `client/rag`, `dto/rag`로 분리했다. 전체 구조와 적재 검증 결과는 [3단계 구현 문서](RAG_STAGE3_IMPLEMENTATION.md)를 참고한다.
+
 ## 지금 구현된 기능을 예시로 보기
 
 현재 기능은 보험 PDF를 읽어 **어느 문서의 몇 페이지에 있는 어떤 조항인지 알 수 있는 텍스트 조각**으로 만드는 것이다. 검색이나 보험 질문에 대한 답변 생성은 아직 수행하지 않는다.
@@ -99,7 +101,7 @@ documents/
 
 ## 테스트 7개가 각각 확인하는 것
 
-테스트 코드는 `src/test/java/wonit/hackathon/a1/domain/insurance/rag/PdfPipelineTests.java`에 있다. 아래 1~6번은 테스트가 직접 만든 PDF·문자열로 재현하는 자동 테스트이고, 7번은 로컬 실제 보험 PDF를 사용하는 테스트다. DB와 외부 API는 사용하지 않는다.
+테스트 코드는 `src/test/java/wonit/hackathon/a1/rag/PdfPipelineTests.java`에 있다. 아래 1~6번은 테스트가 직접 만든 PDF·문자열로 재현하는 자동 테스트이고, 7번은 로컬 실제 보험 PDF를 사용하는 테스트다. DB와 외부 API는 사용하지 않는다.
 
 ### 1. 한글 파일 경로와 실제 페이지 번호
 

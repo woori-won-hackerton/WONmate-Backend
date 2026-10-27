@@ -84,4 +84,14 @@ public class ProductDocument extends BaseEntity {
     public void updateEmbeddingModel(String embeddingModel) {
         this.embeddingModel = embeddingModel;
     }
+
+    /** 새 청크 저장과 같은 트랜잭션에서만 호출해 본문·해시·모델·완료 상태의 일관성을 맞춘다. */
+    public void completeReplacement(String hash, String version, LocalDate date) {
+        if (hash == null || !hash.matches("[0-9a-f]{64}")) throw new IllegalArgumentException("Invalid hash");
+        this.fileHash = hash;
+        this.documentVersion = version;
+        this.effectiveDate = date;
+        this.embeddingModel = "text-embedding-3-small";
+        this.ingestionStatus = IngestionStatus.COMPLETED;
+    }
 }

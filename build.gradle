@@ -55,6 +55,6 @@ tasks.register('ragDebug', JavaExec) {
 	group = 'application'
 	description = 'Extract and chunk PDFs without starting Spring, a database, or OpenAI (default: product_01; --args="--all" for all).'
 	classpath = sourceSets.main.runtimeClasspath
-	mainClass = 'wonit.hackathon.a1.domain.insurance.rag.RagDebug'
+	mainClass = 'wonit.hackathon.a1.rag.RagDebug'
 	maxHeapSize = '2g'
 }

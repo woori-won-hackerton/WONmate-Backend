@@ -1,4 +1,4 @@
-package wonit.hackathon.a1.domain.insurance.repository;
+package wonit.hackathon.a1.repository.rag;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;

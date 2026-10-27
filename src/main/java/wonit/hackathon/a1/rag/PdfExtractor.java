@@ -1,4 +1,4 @@
-package wonit.hackathon.a1.domain.insurance.rag;
+package wonit.hackathon.a1.rag;
 
 import java.io.IOException;
 import java.nio.file.Path;
