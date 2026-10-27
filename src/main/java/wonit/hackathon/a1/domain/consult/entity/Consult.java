@@ -5,6 +5,8 @@ import wonit.hackathon.a1.domain.consult.enums.ConsultType;
 import wonit.hackathon.a1.domain.consult.enums.ConsultationStatus;
 import wonit.hackathon.a1.domain.fccustomer.entity.FcCustomer;
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import lombok.AccessLevel;
@@ -56,6 +58,9 @@ public class Consult extends BaseEntity {
     /** 상담 일정 확정 시각입니다. 상담 완료 시각이 아닙니다. */
     @Column(name = "confirmed_at", columnDefinition = "timestamptz")
     private OffsetDateTime confirmedAt;
+
+    @Column(name = "memo_updated_at")
+    private LocalDateTime memoUpdatedAt;
 
     private Consult(
             FcCustomer fcCustomer,
@@ -113,7 +118,7 @@ public class Consult extends BaseEntity {
         );
     }
 
-    public void updateMemo(String memo) { this.memo = memo; }
+    public void updateMemo(String memo) { this.memo = memo;   this.memoUpdatedAt = LocalDateTime.now();}
 
     public void updatePurpose(String purpose) { this.purpose = purpose; }
 
@@ -134,4 +139,7 @@ public class Consult extends BaseEntity {
         this.scheduledAt = scheduledAt;
         this.confirmedAt = confirmedAt;
     }
+
+
+
 }

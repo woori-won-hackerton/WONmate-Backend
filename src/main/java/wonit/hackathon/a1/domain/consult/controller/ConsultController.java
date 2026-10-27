@@ -11,8 +11,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import wonit.hackathon.a1.domain.ai.briefing.dto.BriefingAiResult;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultCreateRequest;
+import wonit.hackathon.a1.domain.consult.dto.request.ConsultMemoUpdateRequest;
+import wonit.hackathon.a1.domain.consult.dto.response.ConsultMemoResponse;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultResponse;
 import wonit.hackathon.a1.domain.consult.service.ConsultBriefingService;
+import wonit.hackathon.a1.domain.consult.service.ConsultMemoService;
 import wonit.hackathon.a1.domain.consult.service.ConsultService;
 import wonit.hackathon.a1.global.apiPayload.ApiResponse;
 import wonit.hackathon.a1.global.security.CustomUserDetails;
@@ -33,6 +36,7 @@ public class ConsultController {
 
         private final ConsultService consultService;
         private final ConsultBriefingService consultBriefingService;
+    private final ConsultMemoService consultMemoService;
 
     @PostMapping
     @Operation(
@@ -137,7 +141,45 @@ public class ConsultController {
                 consultationId
         );
     }
-        }
+    @Operation(
+            summary = "상담 메모 조회",
+            description = "작성한 상담 메모를 조회합니다."
+    )
+    @GetMapping("/{consultationId}/memo")
+    public ApiResponse<ConsultMemoResponse> getMemo(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long consultationId
+    ) {
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        return ApiResponse.onSuccess(
+                "상담 메모 조회에 성공했습니다.",
+                consultMemoService.getMemo(userId, consultationId)
+        );
+    }
+
+    @Operation(
+            summary = "상담 메모 작성 및 수정",
+            description = "상담 메모를 처음 저장하거나 기존 내용을 수정합니다."
+    )
+    @PatchMapping("/{consultationId}/memo")
+    public ApiResponse<ConsultMemoResponse> updateMemo(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long consultationId,
+            @Valid @RequestBody ConsultMemoUpdateRequest request
+    ) {
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        return ApiResponse.onSuccess(
+                "상담 메모 저장에 성공했습니다.",
+                consultMemoService.updateMemo(
+                        userId,
+                        consultationId,
+                        request
+                )
+        );
+    }
+}
 
 
 
