@@ -1,18 +1,39 @@
-
 server:
   port: 8081
+rag:
+  ingestion:
+    on-startup: ${RAG_INGEST_ON_STARTUP:true}
+  embedding:
+    # 최초 요청 실패 후 429/5xx에만 retries회 추가 시도한다. API 키는 설정에 직접 쓰지 않는다.
+    batch-size: 16
+    timeout-seconds: 60
+    retries: 3
+  debug:
+    # 일괄 적재 CLI와 독립 PDF 디버그 CLI가 함께 사용하는 원본 문서 루트다.
+    documents: documents
+    output: build/rag-debug
+  chunking:
+    # Local estimate, not an embedding-model tokenizer. Short articles stay intact.
+    target-tokens: 750
+    max-tokens: 1000
+    overlap-tokens: 80
+    chars-per-token: 1.5
+
 spring:
   config:
     import: optional:file:.env[.properties]
   autoconfigure:
     exclude:
       - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+
   application:
     name: a1
+
   datasource:
     url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -20,13 +41,22 @@ spring:
     show-sql: true
     properties:
       hibernate.type.json_format_mapper: org.hibernate.type.format.jackson.Jackson3JsonFormatMapper
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+    generate-ddl: false
+  sql:
+    init:
+      # db/rag의 SQL은 필요한 대상 DB에 명시적으로 실행한다.
+      mode: never
+      platform: postgres
+
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
           model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
-
 
 jwt:
   secret: ${JWT_SECRET}

@@ -1,22 +1,20 @@
 package wonit.hackathon.a1.domain.insurance.entity;
 
-import wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct;
-import wonit.hackathon.a1.domain.insurance.enums.DocumentType;
 import jakarta.persistence.*;
 import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import wonit.hackathon.a1.domain.insurance.enums.DocumentType;
+import wonit.hackathon.a1.domain.insurance.enums.IngestionStatus;
 import wonit.hackathon.a1.global.common.BaseEntity;
 
+/** 보험상품에 속한 원본 PDF의 위치, 식별 정보와 처리 상태를 관리한다. */
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "product_documents")
 public class ProductDocument extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "document_id")
@@ -30,37 +28,56 @@ public class ProductDocument extends BaseEntity {
     private String documentName;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "document_type", nullable = false, columnDefinition = "document_type")
+    @Column(name = "document_type", nullable = false, length = 20)
     private DocumentType documentType;
 
-    /** 만료되는 서명 URL 대신 영구 객체 키 또는 저장 위치를 보관합니다. */
-    @Column(name = "storage_uri", nullable = false, columnDefinition = "text")
-    private String storageUri;
+    /** 프로젝트 루트 기준 PDF 상대 경로. 원본 파일명은 그대로 유지한다. */
+    @Column(name = "storage_url", nullable = false, columnDefinition = "text")
+    private String storageUrl;
 
-    private ProductDocument(
-            InsuranceProduct insuranceProduct,
-            String documentName,
-            DocumentType documentType,
-            String storageUri
-    ) {
+    /** PDF 바이너리에서 계산한 SHA-256. 파일명이나 상품명으로 대체하지 않는다. */
+    @Column(name = "file_hash", nullable = false, length = 64)
+    private String fileHash;
+
+    // 신규 문서는 대기 상태로 등록한다. 실제 처리와 상태 전이는 이후 적재 단계에서 수행한다.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ingestion_status", nullable = false, length = 20)
+    private IngestionStatus ingestionStatus = IngestionStatus.PENDING;
+
+    @Column(name = "embedding_model", length = 255)
+    private String embeddingModel;
+
+    private ProductDocument(InsuranceProduct insuranceProduct, String documentName,
+                            DocumentType documentType, String storageUrl, String fileHash) {
         this.insuranceProduct = Objects.requireNonNull(insuranceProduct, "insuranceProduct");
         this.documentName = Objects.requireNonNull(documentName, "documentName");
         this.documentType = Objects.requireNonNull(documentType, "documentType");
-        this.storageUri = Objects.requireNonNull(storageUri, "storageUri");
+        this.storageUrl = Objects.requireNonNull(storageUrl, "storageUrl");
+        if (fileHash == null || !fileHash.matches("[0-9a-fA-F]{64}")) {
+            throw new IllegalArgumentException("fileHash must be a SHA-256 hexadecimal digest");
+        }
+        this.fileHash = fileHash;
     }
 
-    public static ProductDocument create(
-            InsuranceProduct insuranceProduct,
-            String documentName,
-            DocumentType documentType,
-            String storageUri
-    ) {
-        return new ProductDocument(
-                insuranceProduct,
-                documentName,
-                documentType,
-                storageUri
-        );
+    public static ProductDocument create(InsuranceProduct insuranceProduct, String documentName,
+                                         DocumentType documentType, String storageUrl, String fileHash) {
+        return new ProductDocument(insuranceProduct, documentName, documentType, storageUrl,
+                fileHash);
+    }
+
+    public void updateIngestionStatus(IngestionStatus ingestionStatus) {
+        this.ingestionStatus = Objects.requireNonNull(ingestionStatus, "ingestionStatus");
+    }
+
+    public void updateEmbeddingModel(String embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
+    /** 새 청크 저장과 같은 트랜잭션에서만 호출해 본문·해시·모델·완료 상태의 일관성을 맞춘다. */
+    public void completeReplacement(String hash) {
+        if (hash == null || !hash.matches("[0-9a-f]{64}")) throw new IllegalArgumentException("Invalid hash");
+        this.fileHash = hash;
+        this.embeddingModel = "text-embedding-3-small";
+        this.ingestionStatus = IngestionStatus.COMPLETED;
     }
 }

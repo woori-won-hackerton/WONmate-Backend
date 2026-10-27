@@ -17,11 +17,15 @@ repositories {
 	mavenCentral()
 }
 
-ext {
-	set('springAiVersion', "2.0.1")
+// Spring AI: BOM = "이 버전들끼리는 서로 맞는다" 는 버전 목록표 (아래 스타터에는 버전을 따로 적지 않는다)
+dependencyManagement {
+	imports {
+		mavenBom 'org.springframework.ai:spring-ai-bom:2.0.1'
+	}
 }
 
 dependencies {
+	implementation 'org.apache.pdfbox:pdfbox:3.0.8'
 	//jwt 관련
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.7'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.7'
@@ -29,7 +33,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -43,22 +46,31 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	implementation 'org.hibernate.orm:hibernate-vector'
-
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
 	runtimeOnly 'com.mysql:mysql-connector-j'
-
+	implementation 'org.springframework.ai:spring-ai-openai'
 	//ai
 	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 	//swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
 }
 
-dependencyManagement {
-	imports {
-		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
-	}
-}
-
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('ragDebug', JavaExec) {
+	group = 'application'
+	description = 'Extract and chunk PDFs without starting Spring, a database, or OpenAI (default: product_01; --args="--all" for all).'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'wonit.hackathon.a1.domain.rag.RagDebug'
+	maxHeapSize = '2g'
+}
+
+tasks.register('ragIngest', JavaExec) {
+	group = 'application'
+	description = 'Register missing products from local metadata and embed/ingest PDFs into the configured database.'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'wonit.hackathon.a1.domain.rag.RagIngest'
+	maxHeapSize = '2g'
 }
