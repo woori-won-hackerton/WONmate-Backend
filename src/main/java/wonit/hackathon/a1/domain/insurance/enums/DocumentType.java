@@ -1,6 +1,6 @@
 package wonit.hackathon.a1.domain.insurance.enums;
 
-/** PostgreSQL ENUM의 소문자 값을 그대로 사용합니다. */
+/** 상품별 metadata.json의 documentType 값과 동일하게 유지한다. */
 public enum DocumentType {
-    terms, brochure, product_summary, other
+    TERMS, SUMMARY
 }
