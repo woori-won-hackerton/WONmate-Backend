@@ -12,26 +12,38 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class AskControllerTests {
-    @Test void acceptsOptionalProductWithoutQuestionClassification() throws Exception {
+    @Test void acceptsAllTypesAndSingleProductOnlyForExplanation() throws Exception {
         var service = mock(AskService.class);
         var mvc = MockMvcBuilders.standaloneSetup(new AskController(service)).build();
         when(service.ask(any())).thenReturn(new AskResponse("답변", List.of()));
-        for (String suffix : List.of("", ",\"productIds\":null", ",\"productIds\":[]", ",\"productIds\":[6]")) {
+        for (var type : QuestionType.values()) {
+            String selection = type == QuestionType.PRODUCT_EXPLANATION ? ",\"productId\":6" : "";
             mvc.perform(post("/api/rag/ask").contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"question\":\"암 관련 보장 내용 찾아줘\"" + suffix + "}"))
+                    .content("{\"question\":\"설명해줘\",\"questionType\":\"" + type + "\"" + selection + "}"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.answer").value("답변"));
+            verify(service).ask(new AskRequest("설명해줘", type, type == QuestionType.PRODUCT_EXPLANATION ? 6L : null, 5));
         }
-        verify(service).ask(new AskRequest("암 관련 보장 내용 찾아줘", List.of(6L), 5));
     }
-    @Test void rejectsInvalidQuestionsAndExplicitComparisonScope() throws Exception {
+    @Test void rejectsInvalidTypesQuestionsAndSelections() throws Exception {
         var service = mock(AskService.class);
         var mvc = MockMvcBuilders.standaloneSetup(new AskController(service)).build();
-        for (String json : List.of("{\"question\":\" \"}",
-                "{\"question\":\"질문\",\"productIds\":[6,7]}",
-                "{\"question\":\"질문\",\"productIds\":[null]}",
-                "{\"question\":\"질문\",\"productIds\":[0]}",
-                "{\"question\":\"질문\",\"topK\":0}"))
-            mvc.perform(post("/api/rag/ask").contentType(MediaType.APPLICATION_JSON).content(json)).andExpect(status().isBadRequest());
+        for (String json : List.of(
+                "{\"question\":\"질문\"}",
+                "{\"question\":\"질문\",\"questionType\":null}",
+                "{\"question\":\"질문\",\"questionType\":\"UNKNOWN\"}",
+                "{\"question\":\" \",\"questionType\":\"TERM_EXPLANATION\"}",
+                "{\"question\":\"질문\",\"questionType\":\"PRODUCT_EXPLANATION\"}",
+                "{\"question\":\"질문\",\"questionType\":\"PRODUCT_EXPLANATION\",\"productId\":0}",
+                "{\"question\":\"질문\",\"questionType\":\"PRODUCT_EXPLANATION\",\"productId\":[6,7]}",
+                "{\"question\":\"질문\",\"questionType\":\"TERM_EXPLANATION\",\"topK\":0}"))
+            mvc.perform(post("/api/rag/ask").contentType(MediaType.APPLICATION_JSON).content(json))
+                    .andExpect(status().isBadRequest());
+        for (var type : QuestionType.values()) {
+            if (type == QuestionType.PRODUCT_EXPLANATION) continue;
+            mvc.perform(post("/api/rag/ask").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"question\":\"질문\",\"questionType\":\"" + type + "\",\"productId\":6}"))
+                    .andExpect(status().isBadRequest());
+        }
         verifyNoInteractions(service);
     }
 }

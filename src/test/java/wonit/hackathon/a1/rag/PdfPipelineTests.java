@@ -130,6 +130,29 @@ class PdfPipelineTests {
         assertEquals("제2조 【용어】", chunks.get(2).sectionTitle());
     }
 
+    @Test void separatesAppendixPaymentTableFromPreviousArticleWithoutLosingEither() {
+        var chunks = chunker().chunk(List.of(
+                new PdfExtractor.Page(51, "항암치료특약\n제45조 【예금보험에 의한 지급보장】\n파산 시 예금보험 지급보장\n"),
+                new PdfExtractor.Page(52, "(별표1)\n\n보험금 지급기준표\n[기준: 보험가입금액 1,000만원]\n암진단비 5,000만원\n")));
+        var deposit = chunks.stream().filter(c -> c.content().contains("파산 시")).findFirst().orElseThrow();
+        var payment = chunks.stream().filter(c -> c.content().contains("암진단비")).findFirst().orElseThrow();
+        assertNotEquals(deposit.chunkIndex(), payment.chunkIndex());
+        assertFalse(deposit.content().contains("암진단비"));
+        assertEquals("(별표1) 보험금 지급기준표", payment.sectionTitle());
+        assertEquals(payment.sectionTitle(), payment.sectionPath());
+        assertEquals(52, payment.startPage());
+        assertTrue(payment.content().contains("보험가입금액 1,000만원"));
+        assertTrue(deposit.content().contains("예금보험"));
+    }
+
+    @Test void appendixCrossReferenceAndTableOfContentsDoNotStartNewSections() {
+        var chunks = chunker().chunk(List.of(new PdfExtractor.Page(1,
+                "제1조(지급사유)\n(별표1)에 따릅니다\n(별표2) .... 30\n지급조건\n")));
+        assertEquals(1, chunks.size());
+        assertEquals("제1조(지급사유)", chunks.getFirst().sectionTitle());
+        assertTrue(chunks.getFirst().content().contains("(별표1)에 따릅니다"));
+    }
+
     /**
      * 로컬 상품 1의 실제 PDF를 다시 추출·청킹한다(기존 출력 JSON을 읽는 테스트는 아니다).
      * 약관 320쪽·요약서 14쪽, 모든 청크의 페이지 범위·길이와 아래 대표 내용을 검사한다.

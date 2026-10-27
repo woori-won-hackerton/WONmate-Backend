@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 public class ArticleChunker {
     private static final Pattern ARTICLE = Pattern.compile("^\\s*제\\s*\\d+\\s*조(?:의\\s*\\d+)?\\s*[（(【\\[][^）)】\\]]+[）)】\\]]\\s*$");
     private static final Pattern CONTRACT = Pattern.compile("^\\s*(?:(?:\\d+[.)]\\s*)?(?:무배당\\s*)?.{0,100}(?:특약|주계약)(?:\\s*약관)?|보통보험약관)\\s*$");
+    // 별표/별첨은 앞 조항과 다른 구간이다. 특정 조항 제목이나 문서 유형을 제외하지 않는다.
+    private static final Pattern APPENDIX = Pattern.compile("^[（(【\\[]\\s*별\\s*[표첨]\\s*\\d+\\s*[）)】\\]](?:[ \\t]+[^.·…\\d].{0,80})?$");
     public record Settings(int targetTokens, int maxTokens, int overlapTokens, double charsPerToken) {
         public Settings {
             if (targetTokens < 1 || maxTokens < targetTokens || overlapTokens < 0
@@ -25,15 +27,24 @@ public class ArticleChunker {
         var text = new StringBuilder();
         var sourcePages = new ArrayList<Integer>();
         String title = null, contract = null;
+        boolean appendixTitlePending = false;
         for (var page : pages) {
             for (String line : page.text().split("(?<=\n)")) {
                 String heading = line.strip();
                 boolean article = ARTICLE.matcher(heading).matches();
                 boolean parent = CONTRACT.matcher(heading).matches();
-                if (article || parent) {
+                boolean appendix = APPENDIX.matcher(heading).matches();
+                if (article || parent || appendix) {
                     emit(chunks, text, sourcePages, title, contract);
-                    if (parent) { contract = heading; title = null; }
+                    if (appendix) {
+                        // PDF 페이지 머리글로 이전 특약 경로가 남을 수 있어 확인 안 된 부모를 상속하지 않는다.
+                        contract = null; title = heading;
+                    } else if (parent) { contract = heading; title = null; }
                     else { title = heading; }
+                    appendixTitlePending = appendix && heading.matches(".*[）)】\\]]$");
+                } else if (appendixTitlePending && !heading.isBlank()) {
+                    if (heading.length() <= 80) title += " " + heading;
+                    appendixTitlePending = false;
                 }
                 text.append(line);
                 for (int i = 0; i < line.length(); i++) sourcePages.add(page.number());

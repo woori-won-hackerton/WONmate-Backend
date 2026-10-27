@@ -18,18 +18,18 @@ import static org.junit.jupiter.api.Assertions.*;
 class RealAskTests {
     @Autowired AskService service;
     @Autowired JdbcTemplate jdbc;
-    @Test void answersWithoutProductOrClassification() {
-        var result = service.ask(new AskRequest("암 관련 보장 내용 찾아줘", null, 1));
+    @Test void answersConceptWithoutProduct() {
+        var result = service.ask(new AskRequest("암 보장이란 무엇인가요?", QuestionType.INSURANCE_CONCEPT, null, 1));
         assertFalse(result.answer().isBlank());
         assertFalse(result.sources().isEmpty());
-        assertTrue(result.sources().size() <= 2);
+        assertTrue(result.sources().size() <= 15);
         System.out.println("LIVE UNFILTERED: " + result);
     }
     @Test void verifiesRealAnswersAndStoredSourceMetadata() {
         var questions = List.of("암 보장 내용을 설명해 주세요", "암 진단비 지급 조건은?", "암 진단비의 면책기간과 감액 조건은?",
                 "약관에서 암의 정의는?", "이 상품은 화성 여행 중 외계인 납치 보상금을 얼마 지급하나요?");
         for (int i = 0; i < questions.size(); i++) {
-            var result = service.ask(new AskRequest(questions.get(i), List.of(6L), 5));
+            var result = service.ask(new AskRequest(questions.get(i), QuestionType.PRODUCT_EXPLANATION, 6L, 5));
             assertFalse(result.answer().isBlank());
             if (i == 4) assertTrue(result.answer().contains("확인") && result.sources().isEmpty());
             for (var source : result.sources()) {
