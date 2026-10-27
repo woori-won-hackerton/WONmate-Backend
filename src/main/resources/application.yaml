@@ -1,7 +1,8 @@
 server:
   port: 8081
-
 spring:
+  config:
+    import: optional:file:.env[.properties]
   autoconfigure:
     exclude:
       - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
@@ -10,7 +11,7 @@ spring:
     name: a1
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
