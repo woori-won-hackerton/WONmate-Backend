@@ -32,7 +32,7 @@ public class CustomerWiki extends BaseEntity {
             String content
     ) {
         this.customer = Objects.requireNonNull(customer, "customer");
-        this.content = Objects.requireNonNull(content, "content");
+        this.content = validateAndNormalize(content);
     }
 
     public static CustomerWiki create(
@@ -45,7 +45,25 @@ public class CustomerWiki extends BaseEntity {
         );
     }
 
-    public void updateContent(String content) {
-        this.content = Objects.requireNonNull(content, "content");
+    public void appendContent(String additionalContent){
+        String newContent = validateAndNormalize(additionalContent);
+
+        this.content=this.content.isBlank()
+                ? newContent
+                : this.content + "\n\n" + newContent;
+    }
+
+    private static String validateAndNormalize(String content){
+        Objects.requireNonNull(content, "content");
+
+        String normalized = content.strip();
+
+        if (normalized.isBlank()){
+            throw new IllegalArgumentException(
+                    "추가할 내용은 비어 있을 수 없습니다."
+            );
+        }
+
+        return normalized;
     }
 }

@@ -1,3 +1,4 @@
+
 server:
   port: 8081
 spring:
@@ -6,10 +7,8 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
-
   application:
     name: a1
-
   datasource:
     url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USERNAME}
@@ -26,6 +25,7 @@ spring:
       chat:
         options:
           model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
+
 
 jwt:
   secret: ${JWT_SECRET}
