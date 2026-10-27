@@ -20,7 +20,7 @@ public record BriefingAiResult(
         List<@NotBlank @Size(max = 200) String> unconfirmedInformation,
 
         @NotNull
-        @Size(min = 3, max = 3)
+        @Size(min = 1, max = 5)
         List<@NotBlank @Size(max = 200) String> consultationTips
 ) {
 }
