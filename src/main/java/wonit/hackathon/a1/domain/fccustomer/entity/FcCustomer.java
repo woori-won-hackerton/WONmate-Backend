@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import wonit.hackathon.a1.global.common.BaseEntity;
 
 @Entity
 @Getter
@@ -17,7 +18,7 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "fc_customers", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"fc_id", "customer_id"})
 })
-public class FcCustomer {
+public class FcCustomer extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

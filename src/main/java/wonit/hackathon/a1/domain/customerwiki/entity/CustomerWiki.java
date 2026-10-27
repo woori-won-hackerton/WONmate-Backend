@@ -1,7 +1,8 @@
 package wonit.hackathon.a1.domain.customerwiki.entity;
 
 import wonit.hackathon.a1.domain.customer.entity.Customer;
-import wonit.hackathon.a1.global.common.BaseTimeEntity;
+import wonit.hackathon.a1.global.common.BaseEntity;
+
 import jakarta.persistence.*;
 import java.util.Objects;
 import lombok.AccessLevel;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "customer_wikis")
-public class CustomerWiki extends BaseTimeEntity {
+public class CustomerWiki extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -6,13 +6,14 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Check;
+import wonit.hackathon.a1.global.common.BaseEntity;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "financial_consultants")
 @Check(constraints = "(joined_year IS NULL OR joined_year BETWEEN 1900 AND 9999)")
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +23,12 @@ public class User {
     @Column(name = "login_id", nullable = false, unique = true, length = 100)
     private String loginId;
 
-    /** 서비스에서 인코딩한 비밀번호 해시만 전달합니다. */
-    @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
+
+    /**
+     * 암호화된 비밀번호를 저장하므로 최대 길이를 255로 지정
+     */
+    @Column(name = "password", nullable = false, length = 255)
+    private String password;
 
     @Column(name = "email", nullable = false, unique = true, length = 254)
     private String email;
@@ -40,14 +44,14 @@ public class User {
 
     private User(
             String loginId,
-            String passwordHash,
+            String password,
             String email,
             String fullName,
             Short joinedYear,
             String branchName
     ) {
         this.loginId = Objects.requireNonNull(loginId, "loginId");
-        this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
+        this.password = Objects.requireNonNull(password, "password");
         this.email = Objects.requireNonNull(email, "email");
         this.fullName = Objects.requireNonNull(fullName, "fullName");
         this.joinedYear = joinedYear;
@@ -57,7 +61,7 @@ public class User {
 
     public static User create(
             String loginId,
-            String passwordHash,
+            String password,
             String email,
             String fullName,
             Short joinedYear,
@@ -65,7 +69,7 @@ public class User {
     ) {
         return new User(
                 loginId,
-                passwordHash,
+                password,
                 email,
                 fullName,
                 joinedYear,
@@ -73,7 +77,7 @@ public class User {
         );
     }
 
-    public void changePasswordHash(String passwordHash) {
-        this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
+    public void changePassword(String password) {
+        this.password = Objects.requireNonNull(password, "password");
     }
 }
