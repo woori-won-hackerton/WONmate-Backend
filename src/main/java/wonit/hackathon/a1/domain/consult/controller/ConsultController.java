@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import wonit.hackathon.a1.domain.ai.briefing.dto.BriefingAiResult;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultCreateRequest;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultResponse;
+import wonit.hackathon.a1.domain.consult.service.ConsultBriefingService;
 import wonit.hackathon.a1.domain.consult.service.ConsultService;
 import wonit.hackathon.a1.global.apiPayload.ApiResponse;
 import wonit.hackathon.a1.global.security.CustomUserDetails;
@@ -30,6 +32,7 @@ public class ConsultController {
 
 
         private final ConsultService consultService;
+        private final ConsultBriefingService consultBriefingService;
 
     @PostMapping
     @Operation(
@@ -116,6 +119,24 @@ public class ConsultController {
 
 
             //상담 준비 브리핑 생성 - 이전 상담 바탕으로
+
+
+    @Operation(
+            summary = "상담 요약 브리핑 생성",
+            description = "이전 상담 내용을 바탕으로 상담 요약 브리핑을 생성해줍니다."
+    )
+    @PostMapping("/{consultationId}/briefing")
+    public BriefingAiResult generateBriefing(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long consultationId
+    ) {
+        Long fcId = Long.valueOf(jwt.getSubject());
+
+        return consultBriefingService.generateBriefing(
+                fcId,
+                consultationId
+        );
+    }
         }
 
 
