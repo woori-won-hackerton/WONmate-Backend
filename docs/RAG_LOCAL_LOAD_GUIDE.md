@@ -108,9 +108,15 @@ psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/02-
 }
 ```
 
-파일명은 실제 PDF와 일치해야 한다. 폴더 밖 파일은 허용하지 않는다. `unmatched/`는 적재 대상에서 제외한다. 메타데이터에 등록하지 않은 PDF는 적재하지 않는다. 새로 생성하는 상품의 `insurance_type`은 `UNKNOWN`이며 보험료·가입 연령 등은 추정하지 않는다.
+파일명은 실제 PDF와 일치해야 한다. 폴더 밖 파일은 허용하지 않는다. `unmatched/`는 적재 대상에서 제외한다. 메타데이터에 등록하지 않은 PDF는 적재하지 않는다.
+
+상품 분류는 메타데이터의 선택 필드 `insuranceType` (`CANCER`, `WHOLE_LIFE`, `CHILD`, `UNKNOWN`)을 사용한다. 필드가 없으면 버전 관리되는 `src/main/resources/rag/product-categories.json`의 정확한 상품명 매핑을 사용하며 미등록 상품은 `UNKNOWN`으로 둔다. 기존 상품의 null·빈 문자열·UNKNOWN 분류는 서버 시작/CLI 상품 매핑 때 보완하며 기존의 확정된 분류는 유지한다. 기존 DB 분류만 갱신하려면 `db/rag/legacy/06-classify-document-products.sql`을 실행할 수 있다. 분류 변경은 PDF 재임베딩을 요구하지 않는다.
+
+`scripts/sql/mock-contracts.sql`은 문서 적재 후 실행하는 개발용 데이터다. 가짜 보험상품을 생성하지 않고 문서 기반 상품을 참조하며 FC·고객·계약은 목업으로 만든다. 문서 기반 10개 상품의 비어 있는 `base_premium`과 `payment_frequency`에 **임의의 테스트 값**을 채운다. 실제 보험료나 납입주기 자료가 아니며 기존에 있는 값은 덮어쓰지 않는다. 예전 목업 계약은 이 스크립트 전용 고객에 한해 실제 상품으로 연결하고, 예전 목업 상품 행 자체는 삭제하지 않는다. 문서 적재기는 보험료·가입 연령 등을 추정하지 않는다.
 
 ## 5. 적재·확인·재시도
+
+예전 `[MOCK-CONTRACT]` 상품 4종을 제거하려면 문서 적재 후 `scripts/sql/remove-mock-products.sql`을 실행한다. 연결된 계약의 ID·보험료·날짜·상태를 유지한 채 문서 기반 상품으로 참조를 옮기고 목업 상품만 삭제한다. 대상 실제 상품이 없거나 목업 상품에 문서가 연결돼 있으면 전체 트랜잭션을 중단한다. 재실행 시 이미 삭제된 목업 상품은 건너뛴다.
 
 추출 상태를 먼저 확인하고 싶으면 다음을 실행한다. 이 단계는 DB·OpenAI 호출 없이 로컬 PDF만 읽는다. 빠르게 적재하려면 이 단계를 생략하고 바로 `ragIngest`를 실행할 수 있다.
 

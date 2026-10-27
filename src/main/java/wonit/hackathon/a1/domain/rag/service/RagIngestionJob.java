@@ -30,6 +30,7 @@ public class RagIngestionJob {
 
         var tx = new TransactionTemplate(transactionManager);
         var mapper = JsonMapper.builder().build();
+        var categories = new ProductCategoryCatalog();
         Path root = Path.of(documents);
         var mappings = new ArrayList<Object>();
         try (var paths = Files.walk(root)) {
@@ -38,6 +39,7 @@ public class RagIngestionJob {
                 var meta = mapper.readTree(Files.readString(path));
                 String name = meta.path("productName").asString("");
                 if (name.isBlank()) throw new IllegalStateException("Missing product name: " + path);
+                String insuranceType = categories.resolve(name, meta.path("insuranceType").asString("")).name();
                 Long id = tx.execute(status -> {
                     jdbc.queryForObject("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", Object.class, "rag-product:" + name);
                     if (!meta.path("productId").isNull() && !meta.path("productId").isMissingNode()) {
@@ -50,9 +52,12 @@ public class RagIngestionJob {
                     var ids = jdbc.queryForList("SELECT product_id FROM insurance_products WHERE product_name=?", Long.class, name);
                     if (ids.size() > 1) throw new IllegalStateException("Ambiguous product name: " + name);
                     if (!ids.isEmpty()) return ids.getFirst();
-                    // Metadata does not establish premium, age, payment terms or insurance type.
-                    return jdbc.queryForObject("INSERT INTO insurance_products(product_name, insurance_type) VALUES (?, 'UNKNOWN') RETURNING product_id", Long.class, name);
+                    // Premium, age and payment terms are not established by this metadata.
+                    return jdbc.queryForObject("INSERT INTO insurance_products(product_name, insurance_type) VALUES (?, ?) RETURNING product_id", Long.class, name, insuranceType);
                 });
+                if (!insuranceType.equals("UNKNOWN")) {
+                    jdbc.update("UPDATE insurance_products SET insurance_type=? WHERE product_id=? AND (insurance_type IS NULL OR btrim(insurance_type) IN ('', 'UNKNOWN'))", insuranceType, id);
+                }
                 mappings.add(Map.of("metadata", path.toString(), "productId", id, "productName", name));
             }
         }
