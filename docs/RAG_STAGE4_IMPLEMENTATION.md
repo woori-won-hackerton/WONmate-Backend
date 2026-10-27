@@ -141,7 +141,7 @@ HTTP 200의 Response body에서 결과 배열을 확인한다. 아래는 필드 
 - `ragIngest` Gradle 작업과 `RagIngest` 실행 클래스를 추가해 빈 DB에서도 메타데이터로 상품을 등록한 뒤 기존 적재 서비스를 실행할 수 있게 했다.
 - 로컬 `ddl-auto`를 `create`에서 `validate`로 변경해 재시작 시 기존 적재 데이터를 유지한다.
 - 현재 범위에서 사용하지 않는 문서 버전·적용일을 제거했다. 전체 10개 `metadata.json`의 `version`/`effectiveDate`, `ProductDocument`의 필드·생성 인자, 서비스의 메타데이터 파싱, Repository의 저장 인자, 테스트와 관련 문서 예시를 정리했다.
-- 신규 DB 생성 SQL에서도 두 컬럼을 제거했다. 기존 DB 변경용 `db/rag/03-remove-document-version-fields.sql`을 추가하고 실제 로컬 DB에 적용했다. 테이블 재생성이나 PDF 재임베딩은 수행하지 않았다.
+- 신규 DB 생성 SQL에서도 두 컬럼을 제거했다. 기존 DB 변경용 `db/rag/legacy/03-remove-document-version-fields.sql`을 추가하고 실제 로컬 DB에 적용했다. 테이블 재생성이나 PDF 재임베딩은 수행하지 않았다.
 
 ### 적재 및 보존 확인
 

@@ -1,67 +1,50 @@
-# RAG 도메인 DB 설정 (1단계)
+# PostgreSQL / pgvector 스키마 준비
 
-기존 DB에서 문서 버전·적용일 필드를 제거하려면 `03-remove-document-version-fields.sql`을 명시적으로 실행한다. 신규 생성 SQL에는 해당 필드가 없다. 문서와 청크·임베딩은 유지된다.
+현재 신규 DB는 SQL로만 생성한다. 애플리케이션은 단일 `application.yaml`의 `ddl-auto: validate`, `generate-ddl: false`, `spring.sql.init.mode: never`로 스키마를 검증하며 변경 SQL을 자동 실행하지 않는다. `ragIngest`도 validate를 사용한다.
 
-## 확인한 프로젝트 상태
+## 빈 DB 초기화 순서
 
-- Java 21, Gradle 9.8.2, 실제 Spring Boot **4.1.2**, Hibernate **7.4.13.Final**. 요청의 Boot 3.x와 달라 기존 버전을 유지했다.
-- `InsuranceProduct`의 PK는 `Long id`, DB 컬럼은 `insurance_products.product_id` (`bigint`).
-- `ProductDocument`, `ProductChunk`가 이미 일부 존재하여 확장했다. 기존 스타일대로 Java PK 이름 `id`, 연관 필드 `insuranceProduct`, `productDocument`를 유지했다. 부모 컬렉션 없이 자식의 LAZY ManyToOne 및 Repository로 1:N을 표현한다. cascade 삭제는 없다.
-- 기존 Repository, DBML 파일, SQL 마이그레이션 도구 및 DB 연결 설정은 발견되지 않았다. Flyway 자동 실행을 도입하지 않고 명시적으로 실행하는 SQL을 제공한다.
-- 문서 enum은 metadata.json과 같은 `TERMS`, `SUMMARY`이다. 두 새 enum은 `varchar` + CHECK 제약으로 저장한다. 다른 기존 도메인의 PostgreSQL named enum 매핑은 유지한다.
-- `createdAt`, `updatedAt`은 기존 `BaseEntity`와 활성화된 JPA auditing을 재사용한다. SQL 직접 UPDATE 시 `updated_at`은 실행자가 갱신해야 한다.
-- Spring AI 모델 호출 모듈과 BOM을 사용한다. VectorStore starter는 사용하지 않으며 별도 `vector_store` 테이블을 생성하지 않는다. 기존 테이블 검색은 직접 SQL, 벡터 매핑은 `hibernate-vector`를 사용한다.
-- 전체 빌드에 막혔던 기존 `CustomerWiki`의 누락된 `BaseTimeEntity` 참조를 기존 `BaseEntity`로 수정했다.
-
-## 로컬 접속 및 실행
-
-PowerShell에서 접속 정보를 세션 환경 변수로 설정한다. 비밀번호는 코드에 저장하지 않는다. 로컬 프로필은 `optional:file:.env[.properties]`를 명시적으로 import하므로 프로젝트 루트의 `.env`도 읽는다. 환경 변수가 파일 값보다 우선한다.
+PostgreSQL 서버에 pgvector를 설치하고 접속할 개발 DB와 계정을 준비한다. 아래 명령의 호스트·계정·DB는 실제 환경에 맞춘다. psql 실행 파일이 PATH에 없으면 전체 경로를 사용한다.
 
 ```powershell
-$env:WONMATE_DB_URL = 'jdbc:postgresql://localhost:5432/wonmate'
-$env:WONMATE_DB_USERNAME = 'your_user'
-# WONMATE_DB_PASSWORD는 로컬 실행 환경에서 설정
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector'
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/00-existing-domain-enums.sql
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/bootstrap/01-create-business-tables.sql
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/01-create-rag-tables.sql
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/02-verify-rag.sql
 ```
 
-기존 업무 테이블과 `public.insurance_products(product_id bigint)`가 준비된 DB를 대상으로 실행한다. 빈 DB의 전체 업무 스키마를 이 SQL이 생성하지는 않는다. `psql`은 필요 시 비밀번호를 대화형으로 입력받는다.
+| 파일 | 역할 | 실행 조건 |
+|---|---|---|
+| `00-existing-domain-enums.sql` | 현재 업무 엔티티의 PostgreSQL named enum 준비 | 타입이 없을 때 생성, 기존 타입 유지 |
+| `../bootstrap/01-create-business-tables.sql` | 업무 테이블·관계 생성 | 업무 테이블이 없는 빈 DB |
+| `01-create-rag-tables.sql` | 최종 RAG 테이블·FK·UNIQUE·페이지 제약 생성 | 업무 테이블은 있고 RAG 테이블은 없는 DB |
+| `02-verify-rag.sql` | 확장·벡터 타입·FK·UNIQUE 확인 | RAG 테이블이 있는 DB |
+| `legacy/` | 구버전 DB에 필요한 개별 변경 | 신규 설치에서는 실행하지 않음 |
+
+테이블 생성 SQL은 각각 트랜잭션으로 실행하고 이미 테이블이 있으면 실패한다. 일괄 재실행해 기존 데이터를 덮어쓰는 방식은 사용하지 않는다. 업무 테이블이 이미 있으면 업무 생성 SQL을 건너뛰고, RAG 테이블까지 있으면 검증 SQL부터 실행한다. 일부만 준비된 DB에는 실제 스키마를 확인하고 필요한 파일만 적용한다.
+
+## 컬럼 정책과 기존 DB
+
+현재 RAG 생성 SQL과 엔티티에는 `document_version`, `effective_date`가 없다. 신규 DB는 이 두 컬럼을 만들거나 제거할 필요가 없다. 과거 두 컬럼이 남아 있는 DB만 [legacy 설명](legacy/README.md)에 따라 `legacy/03-remove-document-version-fields.sql` 적용 여부를 판단한다. 이 SQL은 모든 신규 설치 뒤에 실행하는 3단계가 아니다.
+
+RAG `product_documents.created_at`, `updated_at`은 신규 SQL에서 NOT NULL 및 CURRENT_TIMESTAMP 기본값으로 생성한다. JPA auditing도 저장 시 값을 채운다. 예전에 Hibernate로 만든 DB의 nullable 타임스탬프를 이 작업에서 자동 변경하지 않는다. 실제 기존 DB의 제약을 변경하려면 별도로 검토한 변경 SQL이 필요하다.
+
+일반 실행과 가이드에서 Hibernate update/create를 사용하지 않는다. 과거 초기 구축 내역은 [1단계 기록](../../docs/RAG_STAGE1_IMPLEMENTATION.md)이며 현재 설치 절차가 아니다.
+
+## 모델·벡터 저장
+
+Spring AI 모델 호출 모듈과 BOM을 사용한다. VectorStore starter와 별도 vector_store 테이블은 사용하지 않는다. 벡터 매핑은 hibernate-vector의 float[] / vector(1536), 검색은 기존 SQL이다. 상품 PK는 insurance_products.product_id bigint, 문서 유형은 TERMS/SUMMARY다.
+
+pgvector 설치는 [공식 설치 문서](https://github.com/pgvector/pgvector#installation)를 따른다. 서버 설치와 대상 DB에서의 CREATE EXTENSION은 별도 단계다. 서버의 PostgreSQL 버전에 맞는 확장을 설치해야 한다.
+
+## 실행과 검증
+
+프로젝트 루트 `.env`에 DB 접속 정보와 API 키를 준비한다. 설정은 application.yaml 하나에 있으며 프로필 생략 시 local이 기본이다. 명시한 프로필이 있으면 해당 프로필을 사용한다. 원본 PDF 복사·메타데이터·적재 및 결과 확인은 [다른 PC 적재 가이드](../../docs/RAG_LOCAL_LOAD_GUIDE.md)를 참고한다.
 
 ```powershell
-& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -X -h localhost -U your_user -d wonmate -v ON_ERROR_STOP=1 -f db/rag/01-create-rag-tables.sql
-& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -X -h localhost -U your_user -d wonmate -v ON_ERROR_STOP=1 -f db/rag/02-verify-rag.sql
-.\gradlew.bat bootRun --args='--spring.profiles.active=local'
+.\gradlew.bat bootRun
+.\gradlew.bat ragIngest
 ```
 
-`application-local.yaml`은 `ddl-auto: validate`, SQL 자동 초기화 비활성화다. 테이블이 없거나 기존 도메인 스키마가 다르면 시작이 실패하므로 해당 차이를 확인한다. `create`, `create-drop`으로 운영 데이터를 초기화하지 않는다.
-
-생성 SQL은 트랜잭션 안에서 실행한다. RAG 테이블이 이미 있으면 오류로 중단하고 롤백한다. 기존 테이블에 `CREATE TABLE IF NOT EXISTS`로 성공을 가장하거나 데이터를 삭제하지 않는다. 이미 이전 버전 테이블이 있다면 실제 스키마/데이터를 확인한 별도 변경 SQL이 필요하다. 이전 `storage_uri` → `storage_url`, `page_number` → `start_page/end_page`, 소문자 enum → 대문자 문자열 변경과 기존 파일 해시의 실제 계산·보충을 검토해야 하며, 임의 기본 해시나 페이지를 채워 넣으면 안 된다.
-
-## pgvector
-
-로컬 PostgreSQL 18 서비스 실행과 `share/extension/vector.control`, `vector--0.8.1.sql`, `lib/vector.dll` 파일을 확인했다. 설치 파일 존재와 개별 DB 확장 활성화는 별개다. 생성 SQL의 `CREATE EXTENSION IF NOT EXISTS vector`는 대상 DB에서 권한이 있는 계정으로 실행해야 한다.
-
-다른 환경에 확장이 없다면 [pgvector 공식 Windows 설치 절차](https://github.com/pgvector/pgvector#windows)에 따라 PostgreSQL 버전과 일치하는 x64 도구로 설치한다. Visual Studio C++ 지원과 관리자 권한의 x64 Native Tools 명령 프롬프트에서 다음 형태로 빌드한다.
-
-```bat
-set "PGROOT=C:\Program Files\PostgreSQL\18"
-git clone https://github.com/pgvector/pgvector.git
-cd pgvector
-nmake /F Makefile.win
-nmake /F Makefile.win install
-```
-
-재현 가능한 설치를 위해 검토한 릴리스 태그를 체크아웃한 후 빌드한다. 설치 후 DB마다 확장을 활성화하고 검증 SQL을 실행한다.
-
-[Hibernate 7.4 공식 Vector 문서](https://docs.hibernate.org/orm/7.4/userguide/html_single/#vector)는 `hibernate-vector`, `float[]`, `@JdbcTypeCode(SqlTypes.VECTOR)`, `@Array(length=1536)` 조합을 지원한다. `columnDefinition="vector(1536)"`도 명시했다. 일반 float 배열 컬럼이나 JSON으로 대체하지 않았다. 벡터 저장·검색 서비스를 구현하지 않았다.
-
-## 검증 상태 및 재실행
-
-- `gradlew.bat build --offline`로 컴파일·패키징 및 DB 없는 Hibernate 엔티티 매핑 검사를 실행한다.
-- `WONMATE_DB_URL`이 없으면 기존 context 테스트와 `RagPostgresTests`는 명시적으로 skip한다. 이는 실제 DB 테스트 성공을 의미하지 않는다.
-- 접속 환경 변수 3개가 모두 설정되고 스키마가 준비되면 `gradlew.bat test --tests '*RagPostgresTests' --rerun-tasks`로 실제 저장/조회, 관계, auditing, nullable 벡터 및 1536차원 값의 왕복, 문서 내 청크 번호 중복 거부, 실제 DB 타입·확장 확인을 수행한다. 테스트 데이터는 트랜잭션 롤백된다. ID 시퀀스 값은 소비될 수 있으므로 테스트 DB 사용을 권장한다.
-- SQL 검증 결과에서 두 FK, `(document_id, chunk_index)` UNIQUE 및 `embedding = vector(1536)`을 확인한다. 페이지는 1부터, chunkIndex는 0부터 시작한다.
-- 2026-10-27 추가된 `.env` 설정으로 로컬 `wonmate` DB에 접속했다. PostgreSQL 18.6, pgvector 0.8.1을 확인하고 `CREATE EXTENSION IF NOT EXISTS vector`를 실행했다.
-- 처음 접속한 DB에는 업무 테이블이 없었다. 기존 엔티티가 지정한 enum 타입도 없어 `00-existing-domain-enums.sql`로 누락 타입만 생성했다. 이후 사용자가 설정한 `ddl-auto: update`로 업무 테이블과 RAG 테이블을 생성했다. `01-create-rag-tables.sql`은 이번 DB에는 실행하지 않았다. 데이터 삭제/초기화는 수행하지 않았다.
-- 실제 DB 대상 전체 빌드와 테스트 5개(매핑 1, context 1, PostgreSQL 3)가 통과했다. `02-verify-rag.sql`도 실행해 두 FK, UNIQUE 및 nullable `vector(1536)`을 확인했다. 통합 테스트의 임시 레코드는 롤백했다.
-- 생성 이후 로컬 설정을 `ddl-auto: validate`, `generate-ddl: false`로 전환했다. 이 설정은 스키마를 검증하며 변경하지 않는다. Hibernate로 생성한 타임스탬프 컬럼은 nullable이며, JPA auditing이 저장 시 값을 채운다. 수동 생성 SQL의 NOT NULL/DEFAULT 정책과 이 부분은 다르다.
-
-PDF 원본과 metadata.json을 변경하거나 적재하지 않았다. PDF 파싱, 청킹, 임베딩 API, 벡터 유사도 검색 및 GPT API는 구현하지 않았다.
+`SchemaBootstrapPostgresTests`는 임시 스키마에서 enum·업무·RAG SQL을 실행한 뒤 전체 엔티티를 Hibernate validate로 확인한다. 구버전 컬럼 부재와 RAG 타임스탬프 정책도 검사하고 모든 DDL을 롤백한다. 테스트 실행에는 WONMATE_DB_URL 환경변수가 필요하다. 실제 기존 테이블을 재생성하지 않는다.

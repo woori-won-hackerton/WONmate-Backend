@@ -16,6 +16,8 @@
 | 적재 진입점 | HTTP 문서 적재 API와 단일 문서·상품 필터 제거. `ragIngest` → `DocumentIngestionService.ingestAll()`의 documents 일괄 적재만 유지 |
 | 미사용 코드 | VectorStore·모델 starter를 필요한 `spring-ai-openai` 모듈로 교체. 중복 PostgreSQL 선언, 무효한 임베딩 모델 설정, 임시 Map, 미사용 Repository 2개와 성공 응답 전용 코드 제거 |
 | 문서 | README·API 예시·관련 단계 기록 갱신. Spring AI 적용 설명과 다른 컴퓨터의 documents 적재 가이드 추가 |
+| 스키마 초기화 | 신규 테이블 생성은 SQL로 통일. 업무 테이블 생성 SQL 추가, 구버전 컬럼 제거 SQL은 `db/rag/legacy/`로 분리. Hibernate update 초기화 경로 제거 |
+| 설정 통합 | `application-local.yaml`을 삭제하고 `application.yaml` 하나로 통합. 기본 프로필은 local, 명시한 프로필은 우선 적용. PDF CLI의 YAML 참조도 변경 |
 
 현재 공개 질문 유형은 `TERM_EXPLANATION`, `INSURANCE_CONCEPT`, `PRODUCT_EXPLANATION`이다. `PRODUCT_EXPLANATION`에만 단일 양수 `productId`를 지정한다. `POST /api/rag/search`, `POST /api/rag/ask`, local 프로필의 `GET /api/documents`를 유지한다. `POST /api/admin/documents/ingest`는 제거했다.
 
@@ -29,7 +31,9 @@
 
 ## 최신 회귀 테스트 결과
 
-마지막 코드 변경 후 로컬 PostgreSQL 연결 환경변수를 설정하고 `gradlew.bat test --offline`을 실행했다. **총 45개 중 38개 통과, 7개 skip, 실패 0개, BUILD SUCCESSFUL (37초)**다. 이번 문서 정리에서는 코드를 변경하거나 테스트를 다시 실행하지 않았다.
+SQL 초기화 정리와 YAML 통합 후 로컬 PostgreSQL 연결 환경변수를 설정하고 `gradlew.bat cleanProcessResources test bootJar --offline`을 실행했다. **총 47개 중 40개 통과, 7개 skip, 실패 0개, BUILD SUCCESSFUL (23초)**다. 삭제한 설정의 빌드 복사본도 정리했으며 실행 JAR 안에는 `application.yaml` 하나만 포함된다. 이전 CLI 정리 시점의 결과는 45개 중 38개 통과·7개 skip·실패 0개였다.
+
+후속 설정·SQL 스키마 테스트 2개와 `ragDebug --product=product_01` 실행도 성공했다(15초). 통합 YAML로 원본 약관 320쪽과 요약서 14쪽의 추출·청킹을 확인했으며 임베딩은 호출하지 않았다. 마지막 HTML/XML 보고서는 후속 테스트 2개의 결과이므로 전체 회귀 집계는 위 기록을 참고한다.
 
 | 검증 | 결과 |
 |---|---|
@@ -39,6 +43,8 @@
 | 질문 API | 남은 3개 유형 유지, 제거된 비교·추천 유형의 HTTP 400 확인 |
 | 문서 API | 제거된 적재 경로의 HTTP 404 및 서비스 미호출, 문서 목록 조회 유지 확인 |
 | 일괄 적재 | 실제 PostgreSQL과 모의 임베딩으로 동일 문서 skip, 변경 문서 교체, API·저장 실패 롤백, 손상 PDF 혼합 배치 보존 확인 |
+| 신규 스키마 | 임시 스키마에 enum·업무·RAG SQL 실행 후 전체 엔티티 Hibernate validate 통과. 구버전 두 컬럼 부재, RAG 타임스탬프 NOT NULL/DEFAULT 확인. 테스트 종료 시 DDL 전체 롤백 |
+| 단일 설정 | YAML 파싱·기본 프로필·스키마 검증 전용 설정·PDF 경로 검사 및 삭제한 local YAML의 클래스패스 부재 확인 |
 
 7개 skip은 전체 PDF 감사 1개, 원본 렌더링 1개, 수동 청크 품질 검토 1개, 실제 임베딩 1개, 실제 검색 1개, 실제 질문 2개다. 전체 PDF 감사는 아래의 앞선 실행에서 통과했으며 모델 전환·CLI 정리 후 다시 실행하지 않았다. 최신 회귀 테스트에서 실제 OpenAI 유료 호출이나 PDF 재임베딩·재적재는 수행하지 않았다. 다른 컴퓨터에서의 초기화 가이드 실행도 미검증이다.
 
@@ -126,7 +132,9 @@ refactor(rag): Spring AI 모델 호출 전환 및 CLI 일괄 적재 정리
 - HTTP 적재 API·단일 문서 필터 제거 및 documents 일괄 CLI 적재 유지
 - 미사용 Repository·성공 응답 코드·의존성·설정 정리
 - 새 PC 적재 가이드와 README·API 문서 갱신
+- 신규 DB 생성 SQL 통일 및 구버전 변경 SQL의 legacy 분리
+- application.yaml 단일 설정과 PDF CLI 설정 참조 통합
 
-검증: 로컬 PostgreSQL 포함 38개 통과, 7개 skip, 실패 0개
+검증: 로컬 PostgreSQL 포함 40개 통과, 7개 skip, 실패 0개 및 bootJar 성공
 실제 OpenAI 호출 및 변경 후 전체 PDF 재감사는 미실행
 ```

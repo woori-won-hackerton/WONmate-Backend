@@ -81,7 +81,7 @@ documents/
 
 ## 설정과 결과
 
-`src/main/resources/application-local.yaml`의 `rag` 항목을 사용한다. CLI는 YAML만 읽으며 Spring 설정의 DB/API 환경변수를 해석하거나 사용하지 않는다.
+`src/main/resources/application.yaml`의 `rag` 항목을 사용한다. CLI는 YAML만 읽으며 Spring 설정의 DB/API 환경변수를 해석하거나 사용하지 않는다.
 
 - `debug.documents`: PDF 입력 폴더 (기본 `documents`)
 - `debug.output`: 결과 폴더 (기본 `build/rag-debug`)

@@ -4,9 +4,11 @@ Java 21, Gradle Wrapper, Spring Boot, PostgreSQL/pgvector 기반이다. 원본 P
 
 모델 호출은 Spring AI의 ChatModel/EmbeddingModel을 사용하고, 저장·검색은 기존 SQL을 사용한다. 전환 내용과 정리한 코드는 [Spring AI 적용 문서](docs/RAG_SPRING_AI.md)를 참고한다.
 
+설정은 `src/main/resources/application.yaml` 하나로 관리한다. 프로필을 생략하면 local을 사용하고 명시한 프로필은 우선 적용한다.
+
 ## 로컬 실행
 
-프로젝트 루트에서 실행한다. PostgreSQL과 기존 업무 스키마가 필요하다. 빈 개발 DB에서는 `db/rag/00-existing-domain-enums.sql`과 업무 엔티티 스키마를 먼저 준비한다. 운영 DB에 `create`/`create-drop`을 적용하지 않는다. 기존 스키마에는 `db/rag/02-verify-rag.sql`로 확인하고 필요한 마이그레이션만 적용한다. RAG 테이블이 없는 경우 `db/rag/01-create-rag-tables.sql`을 명시적으로 실행한다. 자세한 설치 절차는 [DB 설정](db/rag/README.md)을 참고한다.
+프로젝트 루트에서 실행한다. PostgreSQL과 기존 업무 스키마가 필요하다. 빈 개발 DB에서는 `db/rag/00-existing-domain-enums.sql` → `db/bootstrap/01-create-business-tables.sql` → `db/rag/01-create-rag-tables.sql` → `db/rag/02-verify-rag.sql` 순서로 준비한다. 테이블은 SQL로만 생성하고 Hibernate는 검증만 한다. 운영 DB에 `create`/`create-drop`을 적용하지 않는다. 기존 스키마에는 `db/rag/02-verify-rag.sql`로 확인하고 필요한 마이그레이션만 적용한다. RAG 테이블이 없는 경우 `db/rag/01-create-rag-tables.sql`을 명시적으로 실행한다. 자세한 설치 절차는 [DB 설정](db/rag/README.md)을 참고한다.
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -25,7 +27,7 @@ OPENAI_API_KEY=your_key
 OPENAI_CHAT_MODEL=gpt-6-luna
 ```
 
-`OPENAI_CHAT_MODEL`은 실제 계정에서 사용 가능한 모델로 설정한다. 임베딩은 Spring AI를 통해 고정 모델 `text-embedding-3-small`을 호출한다. 사용하지 않던 `AI_EMBEDDING_MODEL` 설정은 제거했다. 배치 크기·타임아웃·재시도·청킹 설정은 `application-local.yaml`의 `rag` 항목에 있다.
+`OPENAI_CHAT_MODEL`은 실제 계정에서 사용 가능한 모델로 설정한다. 임베딩은 Spring AI를 통해 고정 모델 `text-embedding-3-small`을 호출한다. 사용하지 않던 `AI_EMBEDDING_MODEL` 설정은 제거했다. 배치 크기·타임아웃·재시도·청킹 설정은 `application.yaml`의 `rag` 항목에 있다.
 
 ```powershell
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
@@ -90,7 +92,7 @@ ID는 예시이며 실제 목록에서 확인한다. 상품/문서 유형 생략
 
 ## 실제 검증과 한계
 
-2026-10-27 CLI 전용 적재 정리 후 로컬 DB 회귀 테스트는 45개 중 38개 통과·7개 skip·실패 0개다. 전체 PDF 감사는 앞선 실행에서 통과했으며 이번 기능 삭제 후 재실행하지 않았다. 전체 감사 산출물은 20문서·13,934페이지·19,306청크에서 등록·매핑·해시·벡터·페이지 본문 대조 오류 0건이다. 반복 본문은 355그룹, 이미지 전용 OCR 후보는 17쪽이다. 실제 OpenAI 검색·답변 평가는 외부 전송 승인 대기로 미완료다. 검증 기록과 원본 확인 질문은 [7단계 결과](docs/RAG_STAGE7_VALIDATION.md)에 있다. 로컬 DB 테스트는 `WONMATE_DB_URL` 환경변수가 있어야 활성화된다. `.env`를 Spring이 읽는 것만으로 JUnit 환경변수 조건이 활성화되지는 않는다.
+2026-10-27 SQL 초기화·단일 YAML 정리 후 로컬 DB 회귀 테스트는 47개 중 40개 통과·7개 skip·실패 0개이며 실행 JAR 빌드도 성공했다. 전체 PDF 감사는 앞선 실행에서 통과했으며 이번 기능 삭제 후 재실행하지 않았다. 전체 감사 산출물은 20문서·13,934페이지·19,306청크에서 등록·매핑·해시·벡터·페이지 본문 대조 오류 0건이다. 반복 본문은 355그룹, 이미지 전용 OCR 후보는 17쪽이다. 실제 OpenAI 검색·답변 평가는 외부 전송 승인 대기로 미완료다. 검증 기록과 원본 확인 질문은 [7단계 결과](docs/RAG_STAGE7_VALIDATION.md)에 있다. 로컬 DB 테스트는 `WONMATE_DB_URL` 환경변수가 있어야 활성화된다. `.env`를 Spring이 읽는 것만으로 JUnit 환경변수 조건이 활성화되지는 않는다.
 
 ```powershell
 $env:RAG_DATA_AUDIT='true'

@@ -11,7 +11,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class RagDebug {
     public static void main(String[] args) throws Exception {
         var yaml = new YamlPropertiesFactoryBean();
-        yaml.setResources(new ClassPathResource("application-local.yaml"));
+        yaml.setResources(new ClassPathResource("application.yaml"));
         Properties p = Objects.requireNonNull(yaml.getObject());
         var settings = new ArticleChunker.Settings(
                 Integer.parseInt(p.getProperty("rag.chunking.target-tokens", "750")),

@@ -16,7 +16,7 @@
 | `global/config/rag/RagConfiguration` | PDF 추출기와 청커를 Spring 빈으로 구성한다. 순수 PDF 처리 클래스는 Spring 없이 CLI에서도 사용한다. |
 | `domain/insurance/entity/ProductDocument` | 청크 교체와 함께 해시·모델·완료 상태를 갱신하는 `completeReplacement`를 추가했다. |
 | 패키지 및 `build.gradle` | `domain`에는 엔티티와 enum만 남겼다. 컨트롤러/서비스/Repository/클라이언트/DTO/순수 PDF 코드를 루트의 각 패키지로 이동하고 테스트 import와 `ragDebug` 진입점을 갱신했다. |
-| `application-local.yaml` | 배치 크기·타임아웃·재시도 설정과 원본 경로 주석을 추가했다. 현재 로컬 서버 포트는 8081이다. |
+| `application.yaml` | 배치 크기·타임아웃·재시도 설정과 원본 경로 주석을 추가했다. 현재 로컬 서버 포트는 8081이다. |
 | 테스트 | 실제 HTTP 대신 로컬 서버로 오류를 재현하는 테스트, 실제 PostgreSQL 교체/롤백 테스트, 명시적으로 켜는 OpenAI 스모크 테스트를 추가했다. |
 
 핵심 분기에는 왜 그렇게 처리하는지 주석을 보강했다. 서비스에 긴 트랜잭션을 두지 않는 이유, 없는 상품 ID를 우회하지 않는 이유, 파일 경로/변경 검사, 신규 문서까지 보호하는 DB 잠금, 응답 인덱스 복원, 실패 로그에서 원문을 제외하는 이유를 설명한다. 주석과 Swagger 설명 추가는 적재 동작 자체를 변경하지 않는다.

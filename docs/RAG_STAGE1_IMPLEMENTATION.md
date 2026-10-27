@@ -75,7 +75,7 @@
 
 ## 4. PostgreSQL 구축 및 설정
 
-파일: `src/main/resources/application-local.yaml`
+파일: `src/main/resources/application.yaml`
 
 - 로컬 프로필에서 프로젝트 루트의 `.env`를 명시적으로 import한다.
 - 접속 정보는 `WONMATE_DB_URL`, `WONMATE_DB_USERNAME`, `WONMATE_DB_PASSWORD`를 사용한다.

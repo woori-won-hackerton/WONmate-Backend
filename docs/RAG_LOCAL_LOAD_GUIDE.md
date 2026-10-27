@@ -70,23 +70,21 @@ PostgreSQL에 `wonmate` 개발 DB와 접속 계정을 먼저 준비하고 해당
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-기존 업무 엔티티가 사용하는 PostgreSQL enum을 만든다. 다음 명령의 호스트·사용자·DB와 psql 실행 경로는 설치 환경에 맞춘다. `-W`는 암호를 대화형으로 입력받는다.
+신규 DB는 아래 SQL을 **명시된 순서대로 한 번만** 실행한다. 호스트·사용자·DB와 psql 실행 경로는 설치 환경에 맞춘다. `-W`는 암호를 대화형으로 입력받는다.
 
 ```powershell
+# 1. 업무 enum → 2. 업무 테이블 → 3. RAG 테이블 → 4. 검증
 psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/00-existing-domain-enums.sql
-```
-
-**새로 만든 빈 개발 DB에만** 아래 초기화 명령을 한 번 실행한다. Hibernate가 업무 테이블과 RAG 테이블을 생성한다. 서버가 정상 시작되면 `Ctrl+C`로 종료한다.
-
-```powershell
-.\gradlew.bat bootRun --args='--spring.profiles.active=local --spring.jpa.hibernate.ddl-auto=update --spring.jpa.generate-ddl=true'
-```
-
-명령행 옵션은 이 실행에만 적용된다. YAML의 기본값은 계속 `validate`다. 이 경로로 RAG 테이블까지 생성했으면 `01-create-rag-tables.sql`은 실행하지 않는다. 기존 운영 DB에 위 초기화 명령을 사용하지 않는다. 복원 DB에서 검증 오류가 발생하면 초기화 대신 스키마 차이를 확인한다.
-
-```powershell
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/bootstrap/01-create-business-tables.sql
+psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/01-create-rag-tables.sql
 psql -X -h localhost -U your_user -d wonmate -W -v ON_ERROR_STOP=1 -f db/rag/02-verify-rag.sql
 ```
+
+테이블 생성은 SQL만 사용한다. Hibernate는 `application.yaml`의 `ddl-auto: validate`, `generate-ddl: false`로 생성 결과를 검증하며 `update`로 실행하지 않는다. 기존 테이블이 있으면 생성 SQL은 실패하므로 복원 DB에 신규 설치 SQL을 일괄 재실행하지 않는다.
+
+`db/rag/legacy/`는 기존 구버전 DB만을 위한 별도 변경 경로다. 신규 DB에서는 컬럼 제거 SQL을 실행하지 않는다. RAG 생성 SQL은 `document_version`, `effective_date`를 처음부터 포함하지 않으며 타임스탬프는 NOT NULL/DEFAULT 정책으로 생성한다.
+
+설정은 `application.yaml` 하나만 사용한다. 프로필을 지정하지 않으면 `local`이 기본이고, 명시한 `SPRING_PROFILES_ACTIVE` 또는 실행 인자로 다른 프로필을 선택할 수 있다. 별도의 application-local.yaml은 없다.
 
 ## 4. 상품 매핑과 메타데이터
 
@@ -154,4 +152,4 @@ Invoke-RestMethod 'http://localhost:8081/api/documents'
 
 임베딩 모델은 저장 벡터와 맞추기 위해 `text-embedding-3-small`, 1536차원으로 고정한다. 기본 배치 16과 재시도 3회를 사용하며 동시에 여러 적재 프로세스를 실행해 속도를 높이려 하지 않는다. 다른 컴퓨터에서 위 초기화 절차를 직접 실행한 결과까지 검증한 것은 아니며, 로컬 코드의 적재·롤백과 API 제거는 회귀 테스트로 확인한다.
 
-이번 변경의 로컬 DB 회귀 결과: `gradlew.bat test --offline` 성공, 총 45개 중 38개 통과·7개 skip·실패 0개. 실제 OpenAI 호출과 PDF 재임베딩은 실행하지 않았다.
+SQL 초기화·설정 통합 후 로컬 DB 회귀 결과: `gradlew.bat cleanProcessResources test bootJar --offline` 성공, 총 47개 중 40개 통과·7개 skip·실패 0개. 임시 스키마에서 enum·업무·RAG SQL 생성 후 전체 엔티티 검증을 통과하고 DDL은 롤백했다. 실제 OpenAI 호출과 PDF 재임베딩은 실행하지 않았다.
