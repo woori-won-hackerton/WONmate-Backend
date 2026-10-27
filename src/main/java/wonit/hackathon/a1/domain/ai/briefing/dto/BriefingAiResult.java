@@ -21,6 +21,11 @@ public record BriefingAiResult(
 
         @NotNull
         @Size(min = 1, max = 5)
-        List<@NotBlank @Size(max = 200) String> consultationTips
+        List<@NotBlank @Size(max = 200) String> consultationTips,
+
+        /** 이번 상담에서 고객이 물어볼 만한 질문 */
+        @NotNull
+        @Size(min = 1, max = 5)
+        List<@NotBlank @Size(max = 200) String> expectedQuestions
 ) {
 }

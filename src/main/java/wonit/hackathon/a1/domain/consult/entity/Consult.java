@@ -1,6 +1,7 @@
 package wonit.hackathon.a1.domain.consult.entity;
 
 import tools.jackson.databind.JsonNode;
+import wonit.hackathon.a1.domain.consult.enums.AiRecordStatus;
 import wonit.hackathon.a1.domain.consult.enums.ConsultType;
 import wonit.hackathon.a1.domain.consult.enums.ConsultationStatus;
 import wonit.hackathon.a1.domain.fccustomer.entity.FcCustomer;
@@ -62,14 +63,17 @@ public class Consult extends BaseEntity {
     @Column(name = "memo_updated_at")
     private LocalDateTime memoUpdatedAt;
 
+    /** AI 상담 기록을 FC가 확정한 시각. 확정 전에는 null입니다. */
+    @Column(name = "record_confirmed_at", columnDefinition = "timestamptz")
+    private OffsetDateTime recordConfirmedAt;
+
     private Consult(
             FcCustomer fcCustomer,
             OffsetDateTime scheduledAt,
             String purpose,
             String memo,
             JsonNode aiRecord,
-            OffsetDateTime confirmedAt
-    ) {
+            OffsetDateTime confirmedAt) {
         this.fcCustomer = Objects.requireNonNull(fcCustomer, "fcCustomer");
         this.scheduledAt = scheduledAt;
         this.purpose = purpose;
@@ -86,8 +90,7 @@ public class Consult extends BaseEntity {
             String purpose,
             String memo,
             JsonNode aiRecord,
-            OffsetDateTime confirmedAt
-    ) {
+            OffsetDateTime confirmedAt) {
         this.fcCustomer = Objects.requireNonNull(fcCustomer, "fcCustomer");
         this.scheduledAt = scheduledAt;
         this.consultType = Objects.requireNonNull(consultType, "consultType");
@@ -105,8 +108,7 @@ public class Consult extends BaseEntity {
             String purpose,
             String memo,
             JsonNode aiRecord,
-            OffsetDateTime confirmedAt
-    ) {
+            OffsetDateTime confirmedAt) {
         return new Consult(
                 fcCustomer,
                 scheduledAt,
@@ -114,13 +116,17 @@ public class Consult extends BaseEntity {
                 purpose,
                 memo,
                 aiRecord,
-                confirmedAt
-        );
+                confirmedAt);
     }
 
-    public void updateMemo(String memo) { this.memo = memo;   this.memoUpdatedAt = LocalDateTime.now();}
+    public void updateMemo(String memo) {
+        this.memo = memo;
+        this.memoUpdatedAt = LocalDateTime.now();
+    }
 
-    public void updatePurpose(String purpose) { this.purpose = purpose; }
+    public void updatePurpose(String purpose) {
+        this.purpose = purpose;
+    }
 
     public void updateAiRecord(JsonNode aiRecord) {
         this.aiRecord = aiRecord == null ? null : aiRecord.deepCopy();
@@ -139,12 +145,35 @@ public class Consult extends BaseEntity {
         this.scheduledAt = scheduledAt;
         this.confirmedAt = confirmedAt;
     }
+
     public void complete(String finalMemo) {
         this.memo = finalMemo;
         this.memoUpdatedAt = java.time.LocalDateTime.now();
         this.status = ConsultationStatus.completed;
     }
 
+    /** FC가 수정한 AI 상담 기록 저장 (확정 후에는 서비스에서 막음) */
+    public void editAiRecord(JsonNode aiRecord) {
+        this.aiRecord = Objects.requireNonNull(aiRecord, "aiRecord").deepCopy();
+    }
 
+    /** AI 상담 기록 확정 (이미 확정했으면 그대로 유지) */
+    public void confirmAiRecord() {
+        if (this.recordConfirmedAt == null) {
+            this.recordConfirmedAt = OffsetDateTime.now();
+        }
+    }
 
+    public boolean isAiRecordConfirmed() {
+        return this.recordConfirmedAt != null;
+    }
+
+    public AiRecordStatus getAiRecordStatus() {
+        if (this.aiRecord == null) {
+            return AiRecordStatus.NONE;
+        }
+        return this.recordConfirmedAt == null
+                ? AiRecordStatus.DRAFT
+                : AiRecordStatus.CONFIRMED;
+    }
 }

@@ -23,8 +23,7 @@ public class ConsultRecordService {
         if (source.memo() == null || source.memo().isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "저장된 상담 메모가 없어 AI 기록을 생성할 수 없습니다."
-            );
+                    "저장된 상담 메모가 없어 AI 기록을 생성할 수 없습니다.");
         }
 
         ConsultAiRecord generated = aiService.generate(source.memo());
@@ -33,8 +32,7 @@ public class ConsultRecordService {
                 fcId,
                 consultationId,
                 source,
-                generated
-        );
+                generated);
     }
 
     public ConsultAiRecord get(Long fcId, Long consultationId) {
@@ -43,10 +41,20 @@ public class ConsultRecordService {
         if (source.existingRecord() == null) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "아직 생성된 AI 상담 기록이 없습니다."
-            );
+                    "아직 생성된 AI 상담 기록이 없습니다.");
         }
 
         return source.existingRecord();
+    }
+
+    public ConsultAiRecord update(
+            Long fcId,
+            Long consultationId,
+            ConsultAiRecord record) {
+        return storeService.update(fcId, consultationId, record);
+    }
+
+    public ConsultAiRecord confirm(Long fcId, Long consultationId) {
+        return storeService.confirm(fcId, consultationId);
     }
 }
