@@ -44,20 +44,20 @@ public class EmbeddingClient {
             try {
                 var response = model.call(new EmbeddingRequest(batch, null));
                 if (response == null || response.getResults().size() != batch.size())
-                    throw new IllegalStateException("Embedding count mismatch");
+                    throw new EmbeddingFailure("Embedding count mismatch");
                 float[][] vectors = new float[batch.size()][];
                 for (var item : response.getResults()) {
                     int index = item.getIndex();
                     float[] vector = item.getOutput();
                     if (index < 0 || index >= vectors.length || vectors[index] != null
                             || vector == null || vector.length != 1536)
-                        throw new IllegalStateException("Invalid embedding index or dimension");
+                        throw new EmbeddingFailure("Invalid embedding index or dimension");
                     double norm = 0;
                     for (float value : vector) {
-                        if (!Float.isFinite(value)) throw new IllegalStateException("Nonfinite embedding value");
+                        if (!Float.isFinite(value)) throw new EmbeddingFailure("Nonfinite embedding value");
                         norm += (double) value * value;
                     }
-                    if (norm == 0) throw new IllegalStateException("Zero embedding vector");
+                    if (norm == 0) throw new EmbeddingFailure("Zero embedding vector");
                     vectors[index] = vector;
                 }
                 return Arrays.asList(vectors);
@@ -68,14 +68,16 @@ public class EmbeddingClient {
                     try { Thread.sleep(Math.min(1000L << attempt, 8000)); }
                     catch (InterruptedException interrupted) {
                         Thread.currentThread().interrupt();
-                        throw new IllegalStateException("Embedding interrupted");
+                        throw new EmbeddingFailure("Embedding interrupted");
                     }
                     continue;
                 }
                 // SDK exceptions may contain the response body: never propagate their cause/message.
-                throw new IllegalStateException("Embedding HTTP " + status);
+                throw new EmbeddingFailure("Embedding HTTP " + status);
+            } catch (EmbeddingFailure e) {
+                throw e;
             } catch (RuntimeException e) {
-                throw new IllegalStateException("Embedding transport or response failure");
+                throw new EmbeddingFailure("Embedding transport or response failure");
             }
         }
     }

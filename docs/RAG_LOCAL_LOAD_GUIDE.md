@@ -13,7 +13,13 @@ Get-Content -Raw -Encoding utf8 build/rag-ingest/ingestion-report.json
 
 이 명령 하나로 메타데이터에 등록된 상품 확인/누락 상품 생성 → PDF 추출 → 청킹 → Spring AI 임베딩 → 문서·청크 저장을 수행한다. 서버를 별도로 실행할 필요가 없다. 임베딩은 OpenAI API를 사용하므로 원문 전송과 비용이 발생한다. 같은 PDF의 완료 데이터가 있으면 건너뛰어 재실행 비용을 줄인다.
 
-HTTP 적재·업로드 API는 없다. 파일 추가만으로 임베딩하지 않으며 애플리케이션 시작 시에도 자동 적재하지 않는다. 검색·질문 API를 호출해도 PDF를 적재하지 않는다. 적재는 `ragIngest`를 명시적으로 실행할 때만 수행한다.
+서버를 시작하면 기본적으로 상품 매핑과 PDF 적재를 자동 실행한다. 완료 상태·파일 해시·임베딩 모델이 같은 문서는 API 호출 없이 건너뛰며, 새 문서와 변경·실패 문서는 처리한다. JWT나 로그인은 필요하지 않다. HTTP 적재·업로드 API와 파일 감시 기능은 없으므로 실행 중 추가한 파일은 다음 시작 시 처리한다.
+
+```powershell
+.\gradlew.bat bootRun
+```
+
+자동 적재는 서버 시작 과정에서 동기 실행되므로 첫 실행의 준비 완료까지 시간이 걸린다. 문서 적재가 실패해도 서버는 계속 실행하며, 보고서와 콘솔 경고를 확인해야 한다. 실패 문서는 다음 시작 때 다시 시도한다. `.env`에 `RAG_INGEST_ON_STARTUP=false`를 설정하면 자동 적재를 끌 수 있다. 독립 명령 `ragIngest`는 이 설정과 관계없이 한 번 실행한다.
 
 ## 1. 소스와 원본 복사
 
@@ -136,6 +142,24 @@ ORDER BY d.product_id, d.document_type;
 # 다른 터미널에서 조회
 Invoke-RestMethod 'http://localhost:8081/api/documents'
 ```
+
+## 모든 문서가 임베딩에 실패하는 경우
+
+`DataIntegrityViolationException`이면 임베딩 이후 DB 제약 위반일 수 있다. 구버전 DB에 `storage_uri NOT NULL`이 남아 있고 현재 코드가 `storage_url`에 저장하는 경우, `db/rag/legacy/05-align-document-storage-path.sql`을 대상 DB에 한 번 실행한다. 기존 경로를 `storage_url`로 보완하고 예전 컬럼의 필수 제약을 해제하며 기존 문서·청크는 삭제하지 않는다.
+
+`success=0 failed=20`이면 재실행에 앞서 보고서의 `documents[].reason`을 확인한다.
+임베딩 오류는 외부 응답 본문이나 키를 기록하지 않고 다음처럼 구분한다.
+
+- `Embedding HTTP 401`: 실제 적용되는 OpenAI API 키를 확인한다. 같은 이름의 프로세스 환경변수가 `.env`보다 우선한다.
+- `Embedding HTTP 403`: 해당 프로젝트/키의 접근 권한을 확인한다.
+- `Embedding HTTP 429`: 요청 제한 또는 사용 한도를 확인한다. 반복 실행보다 API 계정의 사용량·결제 상태를 먼저 확인한다.
+- `Embedding HTTP 5xx`: 외부 서비스 오류다. 설정된 재시도 후에도 실패하면 나중에 다시 실행한다.
+- `Embedding transport or response failure`: 네트워크·프록시·타임아웃 또는 응답 처리 문제를 추가 진단한다.
+- `Invalid embedding index or dimension`: 임베딩 응답이 요구하는 1536차원 등의 검증을 통과하지 못했다.
+
+원인을 수정한 뒤 프로젝트 루트에서 `./gradlew.bat ragIngest`를 다시 실행한다.
+임베딩은 PDF에서 추출한 텍스트를 OpenAI로 전송하고 비용을 발생시킨다.
+실패 문서의 청크 수 0은 텍스트 추출 실패를 확정하지 않는다. 벡터가 모두 준비되어야 문서 단위로 DB에 저장된다.
 
 ## 자주 막히는 부분
 

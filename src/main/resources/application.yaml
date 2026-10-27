@@ -1,6 +1,8 @@
 server:
   port: 8081
 rag:
+  ingestion:
+    on-startup: ${RAG_INGEST_ON_STARTUP:true}
   embedding:
     # 최초 요청 실패 후 429/5xx에만 retries회 추가 시도한다. API 키는 설정에 직접 쓰지 않는다.
     batch-size: 16

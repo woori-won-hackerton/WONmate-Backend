@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import wonit.hackathon.a1.domain.rag.client.EmbeddingClient;
+import wonit.hackathon.a1.domain.rag.client.EmbeddingFailure;
 import wonit.hackathon.a1.domain.rag.dto.*;
 import wonit.hackathon.a1.domain.insurance.enums.DocumentType;
 import wonit.hackathon.a1.domain.rag.ArticleChunker;
@@ -39,7 +40,7 @@ public class DocumentIngestionService {
     }
 
     /**
-     * Explicit CLI batch over the local documents metadata. Never triggered by HTTP or file arrival.
+     * Batch over local metadata, invoked at server startup or explicitly by the CLI.
      * Several CLI processes are protected against duplicate persistence by database locks.
      */
     public synchronized IngestionReport ingestAll() throws java.io.IOException {
@@ -103,8 +104,9 @@ public class DocumentIngestionService {
 
     private IngestionResult failure(String path, Exception e) {
         // 예외 메시지나 스택에 외부 응답이 섞이지 않도록 오류 종류만 노출한다.
-        LoggerFactory.getLogger(getClass()).warn("Document ingestion failed path={} category={}", path, e.getClass().getSimpleName());
-        return new IngestionResult(path, "FAILED", 0, e.getClass().getSimpleName(), List.of());
+        String reason = e instanceof EmbeddingFailure ? e.getMessage() : e.getClass().getSimpleName();
+        LoggerFactory.getLogger(getClass()).warn("Document ingestion failed path={} category={}", path, reason);
+        return new IngestionResult(path, "FAILED", 0, reason, List.of());
     }
 
 

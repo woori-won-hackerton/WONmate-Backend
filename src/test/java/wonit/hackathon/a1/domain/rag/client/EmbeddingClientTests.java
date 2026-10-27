@@ -60,6 +60,8 @@ class EmbeddingClientTests {
                 var error = assertThrows(IllegalStateException.class, () -> client.embed(List.of("one")));
                 assertFalse(error.getMessage().contains("private-key-body"));
                 assertNull(error.getCause());
+                assertEquals(status == 200 ? "Invalid embedding index or dimension" : "Embedding HTTP " + status,
+                        error.getMessage());
                 assertEquals(status == 500 ? 2 : 1, calls.get());
             } finally { server.stop(0); }
         }
