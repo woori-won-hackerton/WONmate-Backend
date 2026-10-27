@@ -10,13 +10,14 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import wonit.hackathon.a1.global.common.BaseEntity;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "insurance_products")
 @Check(constraints = "(base_premium IS NULL OR base_premium >= 0) AND (payment_term_months IS NULL OR payment_term_months > 0)")
-public class InsuranceProduct {
+public class InsuranceProduct extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

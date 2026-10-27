@@ -10,6 +10,7 @@ import org.hibernate.annotations.Array;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import wonit.hackathon.a1.global.common.BaseEntity;
 
 @Entity
 @Getter
@@ -18,7 +19,7 @@ import org.hibernate.type.SqlTypes;
         @UniqueConstraint(columnNames = {"document_id", "chunk_index"})
 })
 @Check(constraints = "(chunk_index >= 0) AND (page_number IS NULL OR page_number >= 1)")
-public class ProductChunk {
+public class ProductChunk extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
