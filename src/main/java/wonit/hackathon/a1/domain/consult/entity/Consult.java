@@ -139,6 +139,11 @@ public class Consult extends BaseEntity {
         this.scheduledAt = scheduledAt;
         this.confirmedAt = confirmedAt;
     }
+    public void complete(String finalMemo) {
+        this.memo = finalMemo;
+        this.memoUpdatedAt = java.time.LocalDateTime.now();
+        this.status = ConsultationStatus.completed;
+    }
 
 
 

@@ -10,13 +10,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import wonit.hackathon.a1.domain.ai.briefing.dto.BriefingAiResult;
+import wonit.hackathon.a1.domain.consult.dto.request.ConsultCompleteRequest;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultCreateRequest;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultMemoUpdateRequest;
+import wonit.hackathon.a1.domain.consult.dto.response.ConsultAiRecord;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultMemoResponse;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultResponse;
-import wonit.hackathon.a1.domain.consult.service.ConsultBriefingService;
-import wonit.hackathon.a1.domain.consult.service.ConsultMemoService;
-import wonit.hackathon.a1.domain.consult.service.ConsultService;
+import wonit.hackathon.a1.domain.consult.service.*;
 import wonit.hackathon.a1.global.apiPayload.ApiResponse;
 import wonit.hackathon.a1.global.security.CustomUserDetails;
 
@@ -37,6 +37,8 @@ public class ConsultController {
         private final ConsultService consultService;
         private final ConsultBriefingService consultBriefingService;
     private final ConsultMemoService consultMemoService;
+    private final ConsultCompleteService consultCompleteService;
+    private final ConsultRecordService consultRecordService;
 
     @PostMapping
     @Operation(
@@ -177,6 +179,70 @@ public class ConsultController {
                         consultationId,
                         request
                 )
+        );
+    }
+
+
+    @Operation(
+            summary = "상담 완료",
+            description = "최종 메모를 저장하고 상담 상태를 completed로 변경합니다."
+    )
+    @PostMapping("/{consultationId}/complete")
+    public ApiResponse<Void> completeConsultation(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Jwt jwt,
+
+            @Parameter(
+                    description = "상담 ID",
+                    example = "1",
+                    required = true
+            )
+            @PathVariable("consultationId") Long consultationId,
+
+            @Valid @RequestBody ConsultCompleteRequest request
+    ) {
+        Long fcId = Long.valueOf(jwt.getSubject());
+
+        consultCompleteService.complete(fcId, consultationId, request);
+
+        return ApiResponse.<Void>onSuccess(
+                "상담 완료 처리에 성공했습니다.",
+                null
+        );
+    }
+
+    //AI
+
+    @Operation(
+            summary = "AI 상담 기록 초안 생성",
+            description = "완료된 상담의 저장된 메모로 초안을 생성합니다. 기존 기록이 있으면 반환합니다."
+    )
+    @PostMapping("/{consultationId}/ai-record")
+    public ApiResponse<ConsultAiRecord> generateAiRecord(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("consultationId") Long consultationId
+    ) {
+        Long fcId = Long.valueOf(jwt.getSubject());
+
+        return ApiResponse.onSuccess(
+                "AI 상담 기록 초안이 준비되었습니다.",
+                consultRecordService.generate(fcId, consultationId)
+        );
+    }
+
+    @Operation(summary = "AI 상담 기록 조회")
+    @GetMapping("/{consultationId}/ai-record")
+    public ApiResponse<ConsultAiRecord> getAiRecord(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("consultationId") Long consultationId
+    ) {
+        Long fcId = Long.valueOf(jwt.getSubject());
+
+        return ApiResponse.onSuccess(
+                "AI 상담 기록 조회에 성공했습니다.",
+                consultRecordService.get(fcId, consultationId)
         );
     }
 }
