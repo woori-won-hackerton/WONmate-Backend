@@ -68,6 +68,13 @@ public class BriefingAiService {
             - 상품 가입을 압박하거나 보험금 지급을 확정하지 마세요.
             - 보장 부족을 단정하지 마세요.
 
+            [expectedQuestions]
+            - 이번 상담에서 고객이 실제로 물어볼 가능성이 높은 질문을 1~5개 작성하세요.
+            - 고객 관심사, 이전 상담의 미해결 질문, 상담 종류와 연결하세요.
+            - 고객의 말투로 짧게 작성하세요. 예) 지금 보험료를 줄일 수 있나요?
+            - 자료가 부족하면 해당 상담 종류에서 흔히 나오는 질문을 작성하세요.
+            - 답변은 작성하지 말고 질문만 작성하세요.
+
             [표현]
             - 각 항목은 200자 이내로 작성하세요.
             - 문자열에 번호, 글머리표 기호, 마크다운을 넣지 마세요.
@@ -80,8 +87,7 @@ public class BriefingAiService {
     public BriefingAiService(
             @Qualifier("briefingChatClient") ChatClient chatClient,
             JsonMapper jsonMapper,
-            Validator validator
-    ) {
+            Validator validator) {
         this.chatClient = chatClient;
         this.jsonMapper = jsonMapper;
         this.validator = validator;
@@ -96,8 +102,7 @@ public class BriefingAiService {
         if (inputJson.length() > MAX_INPUT_LENGTH) {
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
-                    "브리핑 자료가 너무 깁니다. 상담 기록 범위를 줄여주세요."
-            );
+                    "브리핑 자료가 너무 깁니다. 상담 기록 범위를 줄여주세요.");
         }
 
         BriefingAiResult result;
@@ -109,13 +114,11 @@ public class BriefingAiService {
                     .call()
                     .entity(
                             BriefingAiResult.class,
-                            spec -> spec.useProviderStructuredOutput()
-                    );
+                            spec -> spec.useProviderStructuredOutput());
         } catch (Exception e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
-                    "AI 브리핑 생성에 실패했습니다. 다시 시도해주세요."
-            );
+                    "AI 브리핑 생성에 실패했습니다. 다시 시도해주세요.");
         }
 
         if (result == null) {
@@ -123,8 +126,7 @@ public class BriefingAiService {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
-                    "AI 브리핑 응답이 비어 있습니다."
-            );
+                    "AI 브리핑 응답이 비어 있습니다.");
         }
 
         var violations = validator.validate(result);
@@ -138,14 +140,12 @@ public class BriefingAiService {
                                 .getAnnotation()
                                 .annotationType()
                                 .getSimpleName(),
-                        violation.getMessage()
-                );
+                        violation.getMessage());
             }
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
-                    "AI 브리핑 응답 형식이 올바르지 않습니다."
-            );
+                    "AI 브리핑 응답 형식이 올바르지 않습니다.");
         }
 
         return result;
@@ -158,8 +158,7 @@ public class BriefingAiService {
 
         if (input.histories().size() > MAX_HISTORY_COUNT) {
             throw new IllegalArgumentException(
-                    "이전 상담은 최대 10건까지 전달할 수 있습니다."
-            );
+                    "이전 상담은 최대 10건까지 전달할 수 있습니다.");
         }
 
         for (var history : input.histories()) {

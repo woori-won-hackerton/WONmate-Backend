@@ -39,6 +39,8 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate.type.json_format_mapper: org.hibernate.type.format.jackson.Jackson3JsonFormatMapper
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
@@ -58,7 +60,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-expiration-seconds: 1800
+  access-token-expiration-seconds: ${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:1800}
   issuer: cgv-api
 
 app:

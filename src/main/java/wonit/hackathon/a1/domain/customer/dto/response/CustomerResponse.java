@@ -17,12 +17,22 @@ public record CustomerResponse(
         Boolean hasChildren,
         Boolean hasDisability,
         String phoneNumber,
-        String residentialArea
-){
+        String residentialArea,
+        /** 가장 최근 완료한 상담 날짜. 없으면 null */
+        LocalDate lastConsultedAt,
+        /** 완료한 상담 수 */
+        long completedConsultCount) {
     public static CustomerResponse from(
             Customer customer,
-            LocalDate today
-    ){
+            LocalDate today) {
+        return from(customer, today, null, 0L);
+    }
+
+    public static CustomerResponse from(
+            Customer customer,
+            LocalDate today,
+            LocalDate lastConsultedAt,
+            long completedConsultCount) {
         return new CustomerResponse(
                 customer.getId(),
                 customer.getFullName(),
@@ -34,15 +44,15 @@ public record CustomerResponse(
                 customer.getHasChildren(),
                 customer.getHasDisability(),
                 customer.getPhoneNumber(),
-                customer.getResidentialArea()
-        );
+                customer.getResidentialArea(),
+                lastConsultedAt,
+                completedConsultCount);
     }
 
     private static Integer calculateAge(
             LocalDate birthDate,
-            LocalDate today
-    ){
-        if (birthDate == null || birthDate.isAfter(today)){
+            LocalDate today) {
+        if (birthDate == null || birthDate.isAfter(today)) {
             return null;
         }
 
