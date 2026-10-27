@@ -17,7 +17,7 @@ public class AskController {
     @PostMapping("/api/rag/ask")
     @Operation(summary = "용어·보험 개념·상품 설명", description = "questionType으로 질문 유형을 선택합니다. "
             + "TERM_EXPLANATION(용어), INSURANCE_CONCEPT(보험 개념), PRODUCT_EXPLANATION(상품 설명). "
-            + "상품 설명에만 단일 productId가 필수이며 다른 유형에서는 생략해야 합니다. GET /api/documents에서 상품 ID를 확인합니다. "
+            + "상품 설명에만 단일 productId가 필수이며 다른 유형에서는 생략해야 합니다. GET /api/products에서 상품 ID와 상품명을 확인합니다. "
             + "용어·개념 설명은 전체 상품 중 최대 5개 상품에서 설명 근거를 검색합니다. topK 기본 5, 1~20. 출처는 상품별 최대 3×topK입니다. 이력은 저장하지 않습니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(mediaType = "application/json", examples = @ExampleObject(
