@@ -8,8 +8,8 @@ import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import wonit.hackathon.a1.client.rag.EmbeddingClient;
-import wonit.hackathon.a1.client.rag.ChatClient;
+import wonit.hackathon.a1.domain.rag.client.EmbeddingClient;
+import wonit.hackathon.a1.domain.rag.client.ChatClient;
 
 /** Model calls use Spring AI; persistence and retrieval continue to use our SQL schema. */
 @Configuration(proxyBeanMethods = false)

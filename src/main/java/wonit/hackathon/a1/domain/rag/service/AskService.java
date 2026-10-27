@@ -1,0 +1,89 @@
+package wonit.hackathon.a1.domain.rag.service;
+
+import java.util.*;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import wonit.hackathon.a1.domain.rag.client.ChatClient;
+import wonit.hackathon.a1.domain.rag.dto.*;
+import wonit.hackathon.a1.domain.insurance.enums.DocumentType;
+
+/** 요청별 검색·답변 생성만 수행한다. 대화 상태나 질문·답변을 DB에 저장하지 않는다. */
+@Service
+public class AskService {
+    private static final Logger log = LoggerFactory.getLogger(AskService.class);
+    private static final Pattern INTERNAL_ID = Pattern.compile(
+            "(?i)\\b(?:product|document|chunk)[_\\s-]*id\\b");
+    private final ChunkSearchService search;
+    private final ChatClient chat;
+    private final wonit.hackathon.a1.domain.insurance.repository.InsuranceProductRepository products;
+    public AskService(ChunkSearchService search, ChatClient chat,
+            wonit.hackathon.a1.domain.insurance.repository.InsuranceProductRepository products) {
+        this.search = search; this.chat = chat; this.products = products;
+    }
+
+    public AskResponse ask(AskRequest input) {
+        if (input.questionType() == null || !input.isProductSelectionValid())
+            throw new IllegalArgumentException("Invalid question type or product selection");
+        var request = new AskRequest(QuestionPrivacy.sanitize(input.question()), input.questionType(), input.productId(), input.topK());
+        var chunks = new LinkedHashMap<Long, SearchResult>();
+        boolean explicit = request.questionType() == QuestionType.PRODUCT_EXPLANATION;
+        var catalog = explicit ? products.findAllById(List.of(request.productId())) : products.findAll();
+        var productNames = new HashMap<Long, String>();
+        catalog.forEach(p -> {
+            if (p.getProductName() != null && !p.getProductName().isBlank())
+                productNames.put(p.getId(), p.getProductName());
+        });
+        var ids = explicit ? List.of(request.productId())
+                : catalog.stream().map(p -> p.getId()).sorted().toList();
+        var query = RetrievalQuery.from(request.question());
+        var summaries = new LinkedHashMap<Long, List<SearchResult>>();
+        for (var id : ids) {
+            var found = search.search(new SearchRequest(query.summary(), List.of(id),
+                    List.of(DocumentType.SUMMARY), request.topK()));
+            validateScope(found, id);
+            summaries.put(id, found);
+        }
+        // 용어·개념 설명은 최대 5개 상품에서 근거를 찾고 상품 설명은 지정 상품만 확인한다.
+        var evidenceProductIds = explicit ? ids : ids.stream().filter(id -> !summaries.get(id).isEmpty())
+                .sorted(Comparator.<Long>comparingDouble(id -> summaries.get(id).stream()
+                        .mapToDouble(SearchResult::similarityScore).max().orElse(-1)).reversed())
+                .limit(5).toList();
+        for (var id : evidenceProductIds) {
+            add(chunks, summaries.get(id), id);
+            add(chunks, search.search(new SearchRequest(query.terms(), List.of(id),
+                    List.of(DocumentType.TERMS), request.topK())), id);
+            add(chunks, search.search(new SearchRequest(query.restrictions(), List.of(id),
+                    List.of(DocumentType.TERMS), request.topK())), id);
+        }
+        if (chunks.isEmpty()) return insufficient();
+        var evidence = List.copyOf(chunks.values());
+        var generated = chat.generate(request, evidence, Map.copyOf(productNames));
+        // 원문이나 고객정보를 로그에 남기지 않는다. 답변은 정규식으로 삭제·변형하지 않는다.
+        if (INTERNAL_ID.matcher(generated.answer()).find())
+            log.warn("RAG answer contains internal identifier notation; questionType={}", request.questionType());
+        // LLM의 요청 내 순번만 검증한다. DB 메타데이터를 LLM으로부터 받지 않는다.
+        if (generated.evidenceIndexes() == null || generated.evidenceIndexes().stream()
+                .anyMatch(index -> index == null || index < 1 || index > evidence.size()))
+            throw new IllegalStateException("Unverified RAG evidence index");
+        // 출처 없는 생성 답변은 노출하지 않고 근거 부족 안내로 대체한다.
+        if (generated.evidenceIndexes().isEmpty()) return insufficient();
+        // 답변 관련 근거로 선택된 검색 결과다. 문장별 실제 인용 관계를 보장하지 않는다.
+        return new AskResponse(generated.answer(), generated.evidenceIndexes().stream().distinct()
+                .map(index -> AskResponse.Source.from(evidence.get(index - 1))).toList());
+    }
+    private void add(Map<Long, SearchResult> target, List<SearchResult> results, Long productId) {
+        validateScope(results, productId);
+        for (var c : results) {
+            target.putIfAbsent(c.chunkId(), c);
+        }
+    }
+    private void validateScope(List<SearchResult> results, Long productId) {
+        if (results.stream().anyMatch(c -> !productId.equals(c.productId())))
+            throw new IllegalStateException("RAG product scope mismatch");
+    }
+    private AskResponse insufficient() {
+        return new AskResponse("제공된 검색 근거만으로 질문의 내용을 확인할 수 없습니다. 해당 상품의 보장 및 면책·감액 조건을 원문에서 추가 확인해 주세요.", List.of());
+    }
+}

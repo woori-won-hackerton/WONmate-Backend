@@ -141,19 +141,19 @@ ArticleChunker는 조·주계약·특약 제목에서만 구간을 나누고 별
 
 | 파일 | 변경·추가 내용 |
 | --- | --- |
-| controller/rag/AskController.java | 단일 ask API 유지, 질문 유형과 상품 설명 전용 단일 ID 계약 및 Swagger 예시 갱신 |
-| dto/rag/AskRequest.java | questionType 필수화, productId 단일 값, 유형별 ID 검증 |
-| dto/rag/QuestionType.java | 용어·개념·상품 설명·비교·추천의 5가지 유형 |
-| dto/rag/AskResponse.java | 기존 answer/sources 유지, 출처 의미 명시 |
-| repository/rag/InsuranceProductRepository.java | 기존 insurance_products 카탈로그 조회 |
-| service/rag/AskService.java | 상품별 독립 검색, 비교 대상 상품명 대조, 관련 후보 탐색, 순번 검증과 서버 출처 구성, 본문 ID 경고 |
-| service/rag/QuestionPrivacy.java | 일반적인 이름·휴대폰·이메일·주민번호의 외부 전송 전 마스킹 |
-| service/rag/RetrievalQuery.java | 진단비 관련 검색 목적별 쿼리 보강, 원질문 요구사항 유지 |
-| client/rag/ChatClient.java | 정식 상품명과 원문 전달, 근거 순번 선택, 추천 구조·상품별 검증·지급 예시 규칙 강화, store:false 유지 |
+| domain/rag/controller/AskController.java | 단일 ask API 유지, 질문 유형과 상품 설명 전용 단일 ID 계약 및 Swagger 예시 갱신 |
+| domain/rag/dto/AskRequest.java | questionType 필수화, productId 단일 값, 유형별 ID 검증 |
+| domain/rag/dto/QuestionType.java | 용어·개념·상품 설명·비교·추천의 5가지 유형 |
+| domain/rag/dto/AskResponse.java | 기존 answer/sources 유지, 출처 의미 명시 |
+| domain/insurance/repository/InsuranceProductRepository.java | 기존 insurance_products 카탈로그 조회 |
+| domain/rag/service/AskService.java | 상품별 독립 검색, 비교 대상 상품명 대조, 관련 후보 탐색, 순번 검증과 서버 출처 구성, 본문 ID 경고 |
+| domain/rag/service/QuestionPrivacy.java | 일반적인 이름·휴대폰·이메일·주민번호의 외부 전송 전 마스킹 |
+| domain/rag/service/RetrievalQuery.java | 진단비 관련 검색 목적별 쿼리 보강, 원질문 요구사항 유지 |
+| domain/rag/client/ChatClient.java | 정식 상품명과 원문 전달, 근거 순번 선택, 추천 구조·상품별 검증·지급 예시 규칙 강화, store:false 유지 |
 | rag/ArticleChunker.java | 별표·별첨 경계 분리, 잘못 이어지는 조항 제목과 부모 경로 방지 |
 | rag/AskControllerTests.java | 5개 유형의 요청 및 잘못된 유형·상품 선택 검증 |
 | rag/AskTests.java | 독립 검색·명시 상품 비교·마스킹·메타데이터 출처·ID 경고 테스트 |
-| client/rag/ChatClientTests.java | 원문·정식 상품명 전달, 메타데이터 미전달, 근거 순번 검증 |
+| domain/rag/client/ChatClientTests.java | 원문·정식 상품명 전달, 메타데이터 미전달, 근거 순번 검증 |
 | rag/PdfPipelineTests.java | 별표 분리와 원문·페이지 보존, 본문 참조·목차 회귀 검증 |
 | rag/RetrievalQueryTests.java | 진단비 검색 보강, 복합 요구 보존, 일반 질문 검색 유지 |
 | rag/ChunkQualityReviewTests.java | 명시적 opt-in으로 보고된 실제 DB 청크와 PDF 경계 재검증; 읽기 전용, 유료 호출 없음 |

@@ -8,11 +8,11 @@
 
 | 변경 대상 | 수정 내용과 역할 |
 | --- | --- |
-| `client/rag/EmbeddingClient` | 여러 청크를 배치로 전송하고 타임아웃, 제한 재시도, 차원/응답 순서/유한값 검증을 담당한다. |
-| `service/rag/DocumentIngestionService` | 메타데이터 탐색 → 기존 상품 매핑 → SHA-256 → 변경 여부 검사 → PDF 파싱/청킹 → 임베딩 → DB 교체를 조율한다. |
-| `repository/rag/DocumentIngestionRepository` | 상품 조회, 문서 식별, 청크 수 집계, 문서별 잠금 및 원자적 청크 교체를 담당한다. 서비스에서 JPA와 트랜잭션 코드를 분리했다. |
-| `controller/rag/DocumentController` | 로컬 적재 POST와 저장 목록 GET을 제공한다. Swagger 태그·API 설명·파라미터 설명과 단일 문서 경로 예시를 추가했다. |
-| `dto/rag` | 적재 집계, 문서별 처리 결과, 저장 문서 목록을 타입이 있는 record로 분리하고 Swagger 필드 설명/예시를 추가했다. |
+| `domain/rag/client/EmbeddingClient` | 여러 청크를 배치로 전송하고 타임아웃, 제한 재시도, 차원/응답 순서/유한값 검증을 담당한다. |
+| `domain/rag/service/DocumentIngestionService` | 메타데이터 탐색 → 기존 상품 매핑 → SHA-256 → 변경 여부 검사 → PDF 파싱/청킹 → 임베딩 → DB 교체를 조율한다. |
+| `domain/rag/repository/DocumentIngestionRepository` | 상품 조회, 문서 식별, 청크 수 집계, 문서별 잠금 및 원자적 청크 교체를 담당한다. 서비스에서 JPA와 트랜잭션 코드를 분리했다. |
+| `domain/rag/controller/DocumentController` | 로컬 적재 POST와 저장 목록 GET을 제공한다. Swagger 태그·API 설명·파라미터 설명과 단일 문서 경로 예시를 추가했다. |
+| `domain/rag/dto` | 적재 집계, 문서별 처리 결과, 저장 문서 목록을 타입이 있는 record로 분리하고 Swagger 필드 설명/예시를 추가했다. |
 | `global/config/rag/RagConfiguration` | PDF 추출기와 청커를 Spring 빈으로 구성한다. 순수 PDF 처리 클래스는 Spring 없이 CLI에서도 사용한다. |
 | `domain/insurance/entity/ProductDocument` | 청크 교체와 함께 해시·모델·완료 상태를 갱신하는 `completeReplacement`를 추가했다. |
 | 패키지 및 `build.gradle` | `domain`에는 엔티티와 enum만 남겼다. 컨트롤러/서비스/Repository/클라이언트/DTO/순수 PDF 코드를 루트의 각 패키지로 이동하고 테스트 import와 `ragDebug` 진입점을 갱신했다. |
@@ -23,16 +23,16 @@
 
 ## 패키지 구조
 
-`wonit.hackathon.a1` 기준이다. `domain`에는 엔티티와 enum만 둔다.
+`wonit.hackathon.a1` 기준이다. `domain` 아래 각 도메인에 관련 계층을 함께 둔다.
 
 ```text
-controller/rag/DocumentController.java
-service/rag/DocumentIngestionService.java
-repository/rag/DocumentIngestionRepository.java
-repository/rag/ProductDocumentRepository.java
-repository/rag/ProductChunkRepository.java
-client/rag/EmbeddingClient.java
-dto/rag/{IngestionReport,IngestionResult,DocumentSummary}.java
+domain/rag/controller/DocumentController.java
+domain/rag/service/DocumentIngestionService.java
+domain/rag/repository/DocumentIngestionRepository.java
+domain/rag/repository/ProductDocumentRepository.java
+domain/rag/repository/ProductChunkRepository.java
+domain/rag/client/EmbeddingClient.java
+domain/rag/dto/{IngestionReport,IngestionResult,DocumentSummary}.java
 rag/{PdfExtractor,ArticleChunker,RagDebug}.java
 global/config/rag/RagConfiguration.java
 domain/insurance/entity/{InsuranceProduct,ProductDocument,ProductChunk}.java

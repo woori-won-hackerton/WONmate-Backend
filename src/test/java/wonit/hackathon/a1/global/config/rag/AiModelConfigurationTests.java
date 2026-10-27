@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import wonit.hackathon.a1.client.rag.EmbeddingClient;
+import wonit.hackathon.a1.domain.rag.client.EmbeddingClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AiModelConfigurationTests {

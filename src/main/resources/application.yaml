@@ -24,9 +24,9 @@ spring:
     # 프로젝트 루트에서 실행할 때 로컬 .env를 읽는다. 시스템 환경 변수가 우선한다.
     import: optional:file:.env[.properties]
   datasource:
-    url: ${WONMATE_DB_URL}
-    username: ${WONMATE_DB_USERNAME}
-    password: ${WONMATE_DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

@@ -3,8 +3,8 @@ package wonit.hackathon.a1.global.config.rag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import wonit.hackathon.a1.rag.ArticleChunker;
-import wonit.hackathon.a1.rag.PdfExtractor;
+import wonit.hackathon.a1.domain.rag.ArticleChunker;
+import wonit.hackathon.a1.domain.rag.PdfExtractor;
 
 /** 순수 PDF 처리 클래스는 Spring 의존 없이 유지하고 여기에서 애플리케이션 빈으로 조립한다. */
 @Configuration(proxyBeanMethods = false)
