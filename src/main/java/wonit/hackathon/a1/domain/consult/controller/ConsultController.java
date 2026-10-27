@@ -13,8 +13,10 @@ import wonit.hackathon.a1.domain.ai.briefing.dto.BriefingAiResult;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultCompleteRequest;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultCreateRequest;
 import wonit.hackathon.a1.domain.consult.dto.request.ConsultMemoUpdateRequest;
+import wonit.hackathon.a1.domain.consult.dto.request.ConsultRecordUpdateRequest;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultAiRecord;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultMemoResponse;
+import wonit.hackathon.a1.domain.consult.dto.response.ConsultRecordResponse;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultResponse;
 import wonit.hackathon.a1.domain.consult.service.*;
 import wonit.hackathon.a1.global.apiPayload.ApiResponse;
@@ -231,18 +233,61 @@ public class ConsultController {
         );
     }
 
-    @Operation(summary = "AI 상담 기록 조회")
+    @Operation(summary = "AI 상담 기록 및 확정 상태 조회")
     @GetMapping("/{consultationId}/ai-record")
-    public ApiResponse<ConsultAiRecord> getAiRecord(
+    public ApiResponse<ConsultRecordResponse> getAiRecord(
             @Parameter(hidden = true)
             @AuthenticationPrincipal Jwt jwt,
+
             @PathVariable("consultationId") Long consultationId
     ) {
         Long fcId = Long.valueOf(jwt.getSubject());
 
         return ApiResponse.onSuccess(
                 "AI 상담 기록 조회에 성공했습니다.",
-                consultRecordService.get(fcId, consultationId)
+                consultRecordService.getDetail(fcId, consultationId)
+        );
+    }
+
+    @Operation(
+            summary = "AI 상담 기록 수정",
+            description = "확정 전 상담 기록의 5개 항목을 저장합니다."
+    )
+    @PatchMapping("/{consultationId}/ai-record")
+    public ApiResponse<ConsultRecordResponse> updateAiRecord(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Jwt jwt,
+
+            @PathVariable("consultationId") Long consultationId,
+
+            @Valid @RequestBody ConsultRecordUpdateRequest request
+    ) {
+        Long fcId = Long.valueOf(jwt.getSubject());
+
+        return ApiResponse.onSuccess(
+                "상담 기록 수정에 성공했습니다.",
+                consultRecordService.update(fcId, consultationId, request)
+        );
+    }
+
+    @Operation(
+            summary = "상담 기록 확정",
+            description = "최종 수정 내용을 저장하고 상담 기록을 확정합니다."
+    )
+    @PostMapping("/{consultationId}/ai-record/confirm")
+    public ApiResponse<ConsultRecordResponse> confirmAiRecord(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Jwt jwt,
+
+            @PathVariable("consultationId") Long consultationId,
+
+            @Valid @RequestBody ConsultRecordUpdateRequest request
+    ) {
+        Long fcId = Long.valueOf(jwt.getSubject());
+
+        return ApiResponse.onSuccess(
+                "상담 기록이 확정되었습니다.",
+                consultRecordService.confirm(fcId, consultationId, request)
         );
     }
 }

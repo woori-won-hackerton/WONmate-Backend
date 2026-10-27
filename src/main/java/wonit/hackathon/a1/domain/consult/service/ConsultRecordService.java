@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import wonit.hackathon.a1.domain.consult.dto.request.ConsultRecordUpdateRequest;
 import wonit.hackathon.a1.domain.consult.dto.response.ConsultAiRecord;
+import wonit.hackathon.a1.domain.consult.dto.response.ConsultRecordResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -48,5 +50,28 @@ public class ConsultRecordService {
         }
 
         return source.existingRecord();
+    }
+
+    public ConsultRecordResponse update(
+            Long fcId,
+            Long consultationId,
+            ConsultRecordUpdateRequest request
+    ) {
+        return storeService.update(fcId, consultationId, request);
+    }
+
+    public ConsultRecordResponse confirm(
+            Long fcId,
+            Long consultationId,
+            ConsultRecordUpdateRequest request
+    ) {
+        return storeService.confirm(fcId, consultationId, request);
+    }
+
+    public ConsultRecordResponse getDetail(
+            Long fcId,
+            Long consultationId
+    ) {
+        return storeService.getDetail(fcId, consultationId);
     }
 }
