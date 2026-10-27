@@ -1,6 +1,7 @@
 package wonit.hackathon.a1.domain.consult.entity;
 
 import tools.jackson.databind.JsonNode;
+import wonit.hackathon.a1.domain.consult.enums.ConsultType;
 import wonit.hackathon.a1.domain.consult.enums.ConsultationStatus;
 import wonit.hackathon.a1.domain.fccustomer.entity.FcCustomer;
 import jakarta.persistence.*;
@@ -33,6 +34,11 @@ public class Consult extends BaseEntity {
 
     @Column(name = "purpose", columnDefinition = "text")
     private String purpose;
+
+    // 상담 종류
+    @Enumerated(EnumType.STRING)
+    @Column(name = "consult_type", nullable = false, length = 30)
+    private ConsultType consultType;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -68,9 +74,29 @@ public class Consult extends BaseEntity {
         this.confirmedAt = confirmedAt;
     }
 
+    private Consult(
+            FcCustomer fcCustomer,
+            OffsetDateTime scheduledAt,
+            ConsultType consultType,
+            String purpose,
+            String memo,
+            JsonNode aiRecord,
+            OffsetDateTime confirmedAt
+    ) {
+        this.fcCustomer = Objects.requireNonNull(fcCustomer, "fcCustomer");
+        this.scheduledAt = scheduledAt;
+        this.consultType = Objects.requireNonNull(consultType, "consultType");
+        this.purpose = purpose;
+        this.status = ConsultationStatus.draft;
+        this.memo = memo;
+        this.aiRecord = aiRecord == null ? null : aiRecord.deepCopy();
+        this.confirmedAt = confirmedAt;
+    }
+
     public static Consult create(
             FcCustomer fcCustomer,
             OffsetDateTime scheduledAt,
+            ConsultType consultType,
             String purpose,
             String memo,
             JsonNode aiRecord,
@@ -79,6 +105,7 @@ public class Consult extends BaseEntity {
         return new Consult(
                 fcCustomer,
                 scheduledAt,
+                consultType,
                 purpose,
                 memo,
                 aiRecord,
