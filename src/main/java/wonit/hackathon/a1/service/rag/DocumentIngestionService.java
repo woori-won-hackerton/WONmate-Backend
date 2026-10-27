@@ -39,10 +39,10 @@ public class DocumentIngestionService {
     }
 
     /**
-     * 한 인스턴스의 동시 적재 요청은 직렬화한다. 여러 프로세스의 중복 저장은 DB 잠금으로 방지한다.
-     * productId와 documentPath는 AND 조건의 필터이며 상품 매핑을 강제로 지정하는 값이 아니다.
+     * Explicit CLI batch over the local documents metadata. Never triggered by HTTP or file arrival.
+     * Several CLI processes are protected against duplicate persistence by database locks.
      */
-    public synchronized IngestionReport ingest(Long productId, String documentPath) throws java.io.IOException {
+    public synchronized IngestionReport ingestAll() throws java.io.IOException {
         var results = new ArrayList<IngestionResult>();
         try (var paths = Files.walk(root)) {
             for (Path metadata : paths.filter(p -> p.getFileName().toString().equals("metadata.json")).sorted().toList()) {
@@ -55,10 +55,8 @@ public class DocumentIngestionService {
                     Long declaredId = meta.path("productId").isNull() || meta.path("productId").isMissingNode()
                             ? null : meta.path("productId").asLong(-1);
                     Long mapped = repository.resolveProduct(declaredId, meta.path("productName").asString(""));
-                    if (productId != null && !productId.equals(mapped)) continue;
                     for (var doc : meta.path("documents")) {
                         String relative = directory + "/" + doc.path("fileName").asString("");
-                        if (documentPath != null && !documentPath.equals(relative)) continue;
                         if (mapped == null) {
                             results.add(new IngestionResult(relative, "MAPPING_REQUIRED", 0, "No unique existing product mapping", List.of()));
                             continue;

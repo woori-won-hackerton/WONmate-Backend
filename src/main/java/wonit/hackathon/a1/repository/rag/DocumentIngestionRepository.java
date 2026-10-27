@@ -19,7 +19,11 @@ public class DocumentIngestionRepository {
 
     /** 명시된 기존 ID 또는 정확히 하나 일치하는 상품명만 허용한다. 없거나 모호하면 null을 반환한다. */
     public Long resolveProduct(Long productId, String name) {
-        if (productId != null) return em.find(InsuranceProduct.class, productId) == null ? null : productId;
+        if (productId != null) {
+            var product = em.find(InsuranceProduct.class, productId);
+            return product != null && (name == null || name.isBlank() || name.equals(product.getProductName()))
+                    ? productId : null;
+        }
         var ids = em.createQuery("select p.id from InsuranceProduct p where p.productName = :name", Long.class)
                 .setParameter("name", name).getResultList();
         return ids.size() == 1 ? ids.getFirst() : null;

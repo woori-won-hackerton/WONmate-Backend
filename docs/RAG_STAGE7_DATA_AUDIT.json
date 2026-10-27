@@ -1,0 +1,164 @@
+{
+  "documents" : [ {
+    "ocrPages" : [ 2, 319, 320 ],
+    "duplicateTextGroups" : 2,
+    "chunks" : 539,
+    "productId" : 6,
+    "pageErrors" : 0,
+    "pages" : 320,
+    "pdf" : "documents\\product_01\\통합약관_무배당엔젤쑥쑥어린이보장보험_20260901_00.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 17,
+    "productId" : 6,
+    "pageErrors" : 0,
+    "pages" : 14,
+    "pdf" : "documents\\product_01\\상품요약서_무배당엔젤쑥쑥어린이보장보험_20260901_00.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 25,
+    "chunks" : 984,
+    "productId" : 7,
+    "pageErrors" : 0,
+    "pages" : 566,
+    "pdf" : "documents\\product_02\\통합약관_무배당우리WON하는5배더행복한플러스종신보험_20260901.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 27,
+    "productId" : 7,
+    "pageErrors" : 0,
+    "pages" : 16,
+    "pdf" : "documents\\product_02\\상품요약서_무배당우리WON하는5배더행복한플러스종신보험_20260901.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 25,
+    "chunks" : 984,
+    "productId" : 8,
+    "pageErrors" : 0,
+    "pages" : 566,
+    "pdf" : "documents\\product_03\\통합약관_무배당우리WON하는7배더행복한플러스종신보험_20260901.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 25,
+    "productId" : 8,
+    "pageErrors" : 0,
+    "pages" : 16,
+    "pdf" : "documents\\product_03\\상품요약서_무배당우리WON하는7배더행복한플러스종신보험_20260901.pdf"
+  }, {
+    "ocrPages" : [ 367, 368 ],
+    "duplicateTextGroups" : 3,
+    "chunks" : 707,
+    "productId" : 9,
+    "pageErrors" : 0,
+    "pages" : 368,
+    "pdf" : "documents\\product_04\\통합약관_무배당우리WON하는간편알뜰플러스종신보험_20260701_.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 30,
+    "productId" : 9,
+    "pageErrors" : 0,
+    "pages" : 19,
+    "pdf" : "documents\\product_04\\상품요약서_무배당우리WON하는간편알뜰플러스종신보험_20260401.pdf"
+  }, {
+    "ocrPages" : [ 2026, 2027 ],
+    "duplicateTextGroups" : 39,
+    "chunks" : 2723,
+    "productId" : 10,
+    "pageErrors" : 0,
+    "pages" : 2027,
+    "pdf" : "documents\\product_05\\통합약관_무배당우리WON하는꿈나무우리아이보험_신체부위설명도.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 1,
+    "chunks" : 176,
+    "productId" : 10,
+    "pageErrors" : 0,
+    "pages" : 81,
+    "pdf" : "documents\\product_05\\상품요약서_무배당우리WON하는꿈나무우리아이보험_20260101.pdf"
+  }, {
+    "ocrPages" : [ 617, 618 ],
+    "duplicateTextGroups" : 6,
+    "chunks" : 925,
+    "productId" : 11,
+    "pageErrors" : 0,
+    "pages" : 618,
+    "pdf" : "documents\\product_06\\통합약관_무배당우리WON하는실속플러스하나로암보험_20260601.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 24,
+    "productId" : 11,
+    "pageErrors" : 0,
+    "pages" : 18,
+    "pdf" : "documents\\product_06\\상품요약서_무배당우리WON하는실속플러스하나로암보험_20260601.pdf"
+  }, {
+    "ocrPages" : [ 554, 555 ],
+    "duplicateTextGroups" : 3,
+    "chunks" : 844,
+    "productId" : 12,
+    "pageErrors" : 0,
+    "pages" : 555,
+    "pdf" : "documents\\product_07\\통합약관_무배당우리WON하는실속하나로암보험_20260601.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 22,
+    "productId" : 12,
+    "pageErrors" : 0,
+    "pages" : 17,
+    "pdf" : "documents\\product_07\\상품요약서_무배당우리WON하는실속하나로암보험_20260601.pdf"
+  }, {
+    "ocrPages" : [ 454, 455 ],
+    "duplicateTextGroups" : 4,
+    "chunks" : 714,
+    "productId" : 13,
+    "pageErrors" : 0,
+    "pages" : 455,
+    "pdf" : "documents\\product_08\\통합약관_무배당우리WON하는쑥쑥어린이보장보험_20260901.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 41,
+    "productId" : 13,
+    "pageErrors" : 0,
+    "pages" : 30,
+    "pdf" : "documents\\product_08\\상품요약서_무배당우리WON하는쑥쑥어린이보장보험_20260901.pdf"
+  }, {
+    "ocrPages" : [ 1494, 1495 ],
+    "duplicateTextGroups" : 34,
+    "chunks" : 2002,
+    "productId" : 14,
+    "pageErrors" : 0,
+    "pages" : 1495,
+    "pdf" : "documents\\product_09\\통합약관_무배당우리WON하는암보험_20260701.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 0,
+    "chunks" : 109,
+    "productId" : 14,
+    "pageErrors" : 0,
+    "pages" : 86,
+    "pdf" : "documents\\product_09\\상품요약서_무배당우리WON하는암보험_20260701.pdf"
+  }, {
+    "ocrPages" : [ 6373, 6374 ],
+    "duplicateTextGroups" : 202,
+    "chunks" : 8047,
+    "productId" : 15,
+    "pageErrors" : 0,
+    "pages" : 6374,
+    "pdf" : "documents\\product_10\\통합약관_무배당우리WON하는유니버셜종신보험.pdf"
+  }, {
+    "ocrPages" : [ ],
+    "duplicateTextGroups" : 11,
+    "chunks" : 366,
+    "productId" : 15,
+    "pageErrors" : 0,
+    "pages" : 293,
+    "pdf" : "documents\\product_10\\상품요약서_무배당우리WON하는유니버셜종신보험_20261001.pdf"
+  } ],
+  "issues" : [ ]
+}

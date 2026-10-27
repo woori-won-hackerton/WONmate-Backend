@@ -50,7 +50,7 @@ public class RagIngest {
             Path output = Path.of("build/rag-ingest"); Files.createDirectories(output);
             Files.writeString(output.resolve("product-mappings.json"), mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mappings));
             System.out.println("Product mappings prepared: " + mappings.size());
-            var report = context.getBean(DocumentIngestionService.class).ingest(null, null);
+            var report = context.getBean(DocumentIngestionService.class).ingestAll();
             Files.writeString(output.resolve("ingestion-report.json"), mapper.writerWithDefaultPrettyPrinter().writeValueAsString(report));
             System.out.printf("Ingestion: success=%d skipped=%d failed=%d chunks=%d%n", report.success(), report.skipped(), report.failed(), report.totalChunks());
             if (report.failed() > 0) throw new IllegalStateException("Some documents failed; see build/rag-ingest/ingestion-report.json");

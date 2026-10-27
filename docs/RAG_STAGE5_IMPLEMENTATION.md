@@ -1,5 +1,7 @@
 # 5단계: 보험약관 RAG 질의응답
 
+> 이 문서는 당시 구현 기록이다. 현재 모델 호출과 Repository 구성은 [Spring AI 전환 문서](RAG_SPRING_AI.md)를 따른다. 현재 질문 유형은 용어·보험 개념·단일 상품 설명이며 비교·추천은 제거했다.
+
 > 현재 API 계약은 [6단계 구현 문서](RAG_STAGE6_IMPLEMENTATION.md)와 [API 사용 예시](RAG_API_EXAMPLES.md)를 따른다. 이 문서는 5단계 당시의 구현 기록이며, 자동 유형 판단·productIds 입력·비교/추천 미지원 설명은 현재 동작과 다르다.
 
 

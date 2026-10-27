@@ -5,16 +5,13 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.type.SqlTypes;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct;
 import wonit.hackathon.a1.domain.insurance.entity.ProductChunk;
 import wonit.hackathon.a1.domain.insurance.entity.ProductDocument;
-import wonit.hackathon.a1.repository.rag.ProductChunkRepository;
-import wonit.hackathon.a1.repository.rag.ProductDocumentRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** DB 접속 없이 Hibernate 매핑 및 Repository 파생 쿼리 구성을 검사한다. */
+/** DB 접속 없이 Hibernate 엔티티 매핑을 검사한다. */
 class RagMappingTests {
     @Test
     void postgresMappingsBootstrapWithoutDatabaseOrEmbeddingApi() {
@@ -41,11 +38,7 @@ class RagMappingTests {
                 assertNotNull(document.findAttributeMapping("insuranceProduct"));
                 assertNotNull(document.findAttributeMapping("createdAt"));
                 assertNotNull(document.findAttributeMapping("updatedAt"));
-                try (var entityManager = factory.createEntityManager()) {
-                    var repositories = new JpaRepositoryFactory(entityManager);
-                    assertNotNull(repositories.getRepository(ProductDocumentRepository.class));
-                    assertNotNull(repositories.getRepository(ProductChunkRepository.class));
-                }
+
             }
         } finally {
             StandardServiceRegistryBuilder.destroy(registry);

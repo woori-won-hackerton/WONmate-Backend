@@ -1,5 +1,7 @@
 # 1단계: RAG 도메인 및 PostgreSQL 구축 구현 정리
 
+> 이 문서는 당시 구현 기록이다. 현재 모델 호출과 Repository 구성은 [Spring AI 전환 문서](RAG_SPRING_AI.md)를 따른다. 현재 질문 유형은 용어·보험 개념·단일 상품 설명이며 비교·추천은 제거했다.
+
 ## 1. 작업 범위
 
 기존 보험상품과 연결되는 문서·청크 도메인을 확장하고, 로컬 PostgreSQL에서 저장·조회할 수 있도록 Entity, Repository, enum, 설정 및 SQL을 추가했다.

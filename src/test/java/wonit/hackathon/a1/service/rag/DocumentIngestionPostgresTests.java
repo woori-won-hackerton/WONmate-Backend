@@ -59,24 +59,33 @@ class DocumentIngestionPostgresTests {
             when(embeddings.embed(anyList())).thenReturn(Collections.singletonList(new float[1536]));
             var service = new DocumentIngestionService(embeddings,repository,new PdfExtractor(),
                     new ArticleChunker(new ArticleChunker.Settings(750,1000,80,1.5)),root.toString());
-            assertEquals(1,service.ingest(id,null).success());
+            assertEquals(1,service.ingestAll().success());
             var old = service.list().stream().filter(d -> id.equals(d.productId())).findFirst().orElseThrow();
             Long documentId = old.documentId();
-            assertEquals(1,service.ingest(id,null).skipped()); verify(embeddings,times(1)).embed(anyList());
+            assertNull(repository.resolveProduct(id, "different product"));
+            assertEquals(id, repository.resolveProduct(id, null));
+            assertEquals(1,service.ingestAll().skipped()); verify(embeddings,times(1)).embed(anyList());
             pdf(path,"changed text");
             when(embeddings.embed(anyList())).thenThrow(new IllegalStateException("simulated API failure"));
-            assertEquals(1,service.ingest(id,null).failed());
+            assertEquals(1,service.ingestAll().failed());
             assertEquals(old,service.list().stream().filter(d -> documentId.equals(d.documentId())).findFirst().orElseThrow());
             // 기존 청크를 삭제한 뒤 잘못된 차원을 만나도 트랜잭션 롤백으로 원문이 복구되어야 한다.
             doReturn(Collections.singletonList(new float[3])).when(embeddings).embed(anyList());
-            assertEquals(1,service.ingest(id,null).failed());
+            assertEquals(1,service.ingestAll().failed());
             assertEquals("original text", tx.execute(s -> em.createQuery("select c.content from ProductChunk c where c.productDocument.id=:id",String.class).setParameter("id",documentId).getSingleResult()));
             when(embeddings.embed(anyList())).thenReturn(Collections.singletonList(new float[1536]));
-            assertEquals(1,service.ingest(id,null).success());
+            assertEquals(1,service.ingestAll().success());
             assertEquals("changed text", tx.execute(s -> em.createQuery("select c.content from ProductChunk c where c.productDocument.id=:id",String.class).setParameter("id",documentId).getSingleResult()));
-            assertEquals(1,service.ingest(id,null).skipped());
+            assertEquals(1,service.ingestAll().skipped());
+            // 손상된 다른 문서가 있어도 기존 정상 문서는 건너뛰고 그대로 보존한다.
+            Files.writeString(dir.resolve("broken.pdf"), "not a PDF");
+            Files.writeString(dir.resolve("metadata.json"), "{\"productId\":"+id+",\"documents\":[{\"fileName\":\"test.pdf\",\"documentType\":\"TERMS\"},{\"fileName\":\"broken.pdf\",\"documentType\":\"SUMMARY\"}]}");
+            var partial = service.ingestAll();
+            assertEquals(1,partial.failed());
+            assertEquals(1,partial.skipped());
+            assertEquals("changed text", tx.execute(s -> em.createQuery("select c.content from ProductChunk c where c.productDocument.id=:id",String.class).setParameter("id",documentId).getSingleResult()));
             Files.writeString(dir.resolve("metadata.json"),"{\"productId\":-1,\"documents\":[{\"fileName\":\"test.pdf\",\"documentType\":\"TERMS\"}]}");
-            assertEquals("MAPPING_REQUIRED",service.ingest(null,null).documents().getFirst().status());
+            assertEquals("MAPPING_REQUIRED",service.ingestAll().documents().getFirst().status());
         } finally {
             tx.executeWithoutResult(s -> {
                 em.createQuery("delete from ProductChunk c where c.productDocument.insuranceProduct.id=:id").setParameter("id",id).executeUpdate();

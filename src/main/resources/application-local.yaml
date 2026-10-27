@@ -42,9 +42,13 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY}              # 🚨 키는 환경변수에서만 읽는다
       chat:
-        model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
-      embedding:
-        dimensions: 1536
-        model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
 server:
   port: 8081
+
+# The upstream model logs the full prompt at WARN when a response has no choices.
+# Keep document text and credentials out of framework diagnostic output as well.
+logging:
+  level:
+    org.springframework.ai.openai: ERROR

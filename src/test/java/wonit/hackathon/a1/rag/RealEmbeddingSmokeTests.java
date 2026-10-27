@@ -18,7 +18,12 @@ class RealEmbeddingSmokeTests {
         var doc = meta.path("documents").get(1);
         var pages = new PdfExtractor().extract(dir.resolve(doc.path("fileName").asString()));
         var chunks = new ArticleChunker(new ArticleChunker.Settings(750,1000,80,1.5)).chunk(pages);
-        var vectors = new EmbeddingClient(System.getenv("OPENAI_API_KEY"),60,16,3)
+        var model = org.springframework.ai.openai.OpenAiEmbeddingModel.builder()
+                .options(org.springframework.ai.openai.OpenAiEmbeddingOptions.builder()
+                        .apiKey(System.getenv("OPENAI_API_KEY")).model(EmbeddingClient.MODEL).dimensions(1536)
+                        .encodingFormat(org.springframework.ai.openai.OpenAiEmbeddingOptions.EncodingFormat.FLOAT)
+                        .timeout(java.time.Duration.ofSeconds(60)).maxRetries(0).build()).build();
+        var vectors = new EmbeddingClient(model,16,3)
                 .embed(chunks.stream().limit(2).map(ArticleChunker.Chunk::content).toList());
         assertEquals(2,vectors.size());
         for (var vector : vectors) assertEquals(1536,vector.length);

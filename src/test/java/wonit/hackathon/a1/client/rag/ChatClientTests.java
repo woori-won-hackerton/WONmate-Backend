@@ -16,17 +16,27 @@ class ChatClientTests {
         var finish = new java.util.concurrent.atomic.AtomicReference<>("stop");
         var observed = new java.util.concurrent.atomic.AtomicReference<String>();
         var content = new java.util.concurrent.atomic.AtomicReference<>("{\"answer\":\"확인 불가\",\"evidenceIndexes\":[]}");
-        server.createContext("/chat", exchange -> {
+        var refusal = new java.util.concurrent.atomic.AtomicReference<>("");
+        var status = new java.util.concurrent.atomic.AtomicInteger(200);
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        server.createContext("/chat/completions", exchange -> {
+            calls.incrementAndGet();
             observed.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            byte[] body = mapper.writeValueAsString(Map.of("choices", List.of(Map.of(
-                    "finish_reason", finish.get(), "message", Map.of("content", content.get())))))
+            byte[] body = mapper.writeValueAsString(Map.of("id", "test-completion", "model", "configured-model", "created", 1, "choices", List.of(Map.of("index", 0,
+                    "finish_reason", finish.get(), "message", Map.of("role", "assistant", "content", content.get(), "refusal", refusal.get())))))
                     .getBytes(StandardCharsets.UTF_8);
-            exchange.sendResponseHeaders(200, body.length);
+            exchange.sendResponseHeaders(status.get(), body.length);
             exchange.getResponseBody().write(body); exchange.close();
         });
         server.start();
         try {
-            var client = new ChatClient("test", "configured-model", URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/chat"));
+            var model = org.springframework.ai.openai.OpenAiChatModel.builder()
+                    .options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey("test")
+                            .model("configured-model").maxRetries(0).store(false)
+                            .responseFormat(org.springframework.ai.openai.OpenAiChatModel.ResponseFormat.builder()
+                                    .jsonSchema(ChatClient.OUTPUT_SCHEMA).strict(true).build())
+                            .baseUrl("http://127.0.0.1:" + server.getAddress().getPort()).build()).build();
+            var client = new ChatClient(model);
             var request = new AskRequest("암 보장", QuestionType.PRODUCT_EXPLANATION, 6L, 5);
             var chunk = new SearchResult(8027L, 22L, 6L, "internal.pdf",
                     wonit.hackathon.a1.domain.insurance.enums.DocumentType.SUMMARY,
@@ -60,6 +70,23 @@ class ChatClientTests {
             }
             finish.set("length");
             assertThrows(IllegalStateException.class, () -> client.generate(request, chunks, names));
+            finish.set("stop");
+            content.set("{\"answer\":\"보장 설명\",\"evidenceIndexes\":[1]}");
+            refusal.set("private-refusal");
+            assertThrows(IllegalStateException.class, () -> client.generate(request, chunks, names));
+            refusal.set("");
+            for (String invalid : List.of("not JSON", "{\"answer\":\" \",\"evidenceIndexes\":[]}", "{\"answer\":\"답변\"}")) {
+                content.set(invalid);
+                assertThrows(IllegalStateException.class, () -> client.generate(request, chunks, names));
+            }
+            for (int code : List.of(401, 500)) {
+                status.set(code);
+                int before = calls.get();
+                var error = assertThrows(IllegalStateException.class, () -> client.generate(request, chunks, names));
+                assertEquals(before + 1, calls.get());
+                assertNull(error.getCause());
+                assertFalse(error.getMessage().contains("private-refusal"));
+            }
         } finally { server.stop(0); }
     }
 }

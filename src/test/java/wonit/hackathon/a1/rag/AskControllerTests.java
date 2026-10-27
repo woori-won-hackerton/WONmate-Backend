@@ -31,6 +31,8 @@ class AskControllerTests {
                 "{\"question\":\"질문\"}",
                 "{\"question\":\"질문\",\"questionType\":null}",
                 "{\"question\":\"질문\",\"questionType\":\"UNKNOWN\"}",
+                "{\"question\":\"질문\",\"questionType\":\"PRODUCT_COMPARISON\"}",
+                "{\"question\":\"질문\",\"questionType\":\"PRODUCT_RECOMMENDATION\"}",
                 "{\"question\":\" \",\"questionType\":\"TERM_EXPLANATION\"}",
                 "{\"question\":\"질문\",\"questionType\":\"PRODUCT_EXPLANATION\"}",
                 "{\"question\":\"질문\",\"questionType\":\"PRODUCT_EXPLANATION\",\"productId\":0}",

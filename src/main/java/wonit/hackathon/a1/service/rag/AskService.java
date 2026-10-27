@@ -37,25 +37,20 @@ public class AskService {
         });
         var ids = explicit ? List.of(request.productId())
                 : catalog.stream().map(p -> p.getId()).sorted().toList();
-        // 비교 대상 상품명이 명시되면 요약서 유사도 순위로 대상이 탈락하지 않게 한다.
-        var named = request.questionType() == QuestionType.PRODUCT_COMPARISON
-                ? ids.stream().filter(id -> mentionsProduct(request.question(), productNames.get(id))).toList()
-                : List.<Long>of();
-        if (!named.isEmpty()) ids = named;
         var query = RetrievalQuery.from(request.question());
         var summaries = new LinkedHashMap<Long, List<SearchResult>>();
         for (var id : ids) {
             var found = search.search(new SearchRequest(query.summary(), List.of(id),
                     List.of(DocumentType.SUMMARY), request.topK()));
-            add(new LinkedHashMap<>(), found, id);
+            validateScope(found, id);
             summaries.put(id, found);
         }
-        // ID 생략 시 요약서 관련도로 최대 5개 후보를 선정한다. 지정 상품은 모두 확인한다.
-        var candidates = explicit || !named.isEmpty() ? ids : ids.stream().filter(id -> !summaries.get(id).isEmpty())
+        // 용어·개념 설명은 최대 5개 상품에서 근거를 찾고 상품 설명은 지정 상품만 확인한다.
+        var evidenceProductIds = explicit ? ids : ids.stream().filter(id -> !summaries.get(id).isEmpty())
                 .sorted(Comparator.<Long>comparingDouble(id -> summaries.get(id).stream()
                         .mapToDouble(SearchResult::similarityScore).max().orElse(-1)).reversed())
                 .limit(5).toList();
-        for (var id : candidates) {
+        for (var id : evidenceProductIds) {
             add(chunks, summaries.get(id), id);
             add(chunks, search.search(new SearchRequest(query.terms(), List.of(id),
                     List.of(DocumentType.TERMS), request.topK())), id);
@@ -78,18 +73,15 @@ public class AskService {
         return new AskResponse(generated.answer(), generated.evidenceIndexes().stream().distinct()
                 .map(index -> AskResponse.Source.from(evidence.get(index - 1))).toList());
     }
-    private boolean mentionsProduct(String question, String productName) {
-        if (productName == null) return false;
-        String normalized = productName.toLowerCase(Locale.ROOT).replaceAll("[^가-힣a-z0-9]", "");
-        String alias = normalized.replaceFirst("^(무배당)?우리won하는", "").replaceFirst("^무배당", "");
-        String text = question.toLowerCase(Locale.ROOT).replaceAll("[^가-힣a-z0-9]", "");
-        return !normalized.isBlank() && (text.contains(normalized) || alias.length() >= 6 && text.contains(alias));
-    }
     private void add(Map<Long, SearchResult> target, List<SearchResult> results, Long productId) {
+        validateScope(results, productId);
         for (var c : results) {
-            if (!productId.equals(c.productId())) throw new IllegalStateException("RAG product scope mismatch");
             target.putIfAbsent(c.chunkId(), c);
         }
+    }
+    private void validateScope(List<SearchResult> results, Long productId) {
+        if (results.stream().anyMatch(c -> !productId.equals(c.productId())))
+            throw new IllegalStateException("RAG product scope mismatch");
     }
     private AskResponse insufficient() {
         return new AskResponse("제공된 검색 근거만으로 질문의 내용을 확인할 수 없습니다. 해당 상품의 보장 및 면책·감액 조건을 원문에서 추가 확인해 주세요.", List.of());

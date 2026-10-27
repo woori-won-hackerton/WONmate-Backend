@@ -1,5 +1,9 @@
 # 3단계: OpenAI 임베딩 및 PostgreSQL 적재
 
+> 이 문서는 당시 구현 기록이다. 현재 모델 호출과 Repository 구성은 [Spring AI 전환 문서](RAG_SPRING_AI.md)를 따른다. 현재 질문 유형은 용어·보험 개념·단일 상품 설명이며 비교·추천은 제거했다.
+
+> 현재는 이 문서의 POST 적재 API와 단일 문서 필터를 제거했다. 아래 API 실행 절차는 과거 기록이며 더 이상 사용할 수 없다. 현재 적재는 [documents CLI 가이드](RAG_LOCAL_LOAD_GUIDE.md)를 따른다.
+
 ## 이번에 수정한 내용
 
 | 변경 대상 | 수정 내용과 역할 |

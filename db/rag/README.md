@@ -10,7 +10,7 @@
 - 기존 Repository, DBML 파일, SQL 마이그레이션 도구 및 DB 연결 설정은 발견되지 않았다. Flyway 자동 실행을 도입하지 않고 명시적으로 실행하는 SQL을 제공한다.
 - 문서 enum은 metadata.json과 같은 `TERMS`, `SUMMARY`이다. 두 새 enum은 `varchar` + CHECK 제약으로 저장한다. 다른 기존 도메인의 PostgreSQL named enum 매핑은 유지한다.
 - `createdAt`, `updatedAt`은 기존 `BaseEntity`와 활성화된 JPA auditing을 재사용한다. SQL 직접 UPDATE 시 `updated_at`은 실행자가 갱신해야 한다.
-- 현재 단계에 불필요한 Spring AI VectorStore starter와 해당 BOM을 제거했다. API 호출이나 별도 `vector_store` 테이블 자동 생성을 요구하지 않는다. 벡터는 기존 `hibernate-vector` 의존성으로 매핑한다.
+- Spring AI 모델 호출 모듈과 BOM을 사용한다. VectorStore starter는 사용하지 않으며 별도 `vector_store` 테이블을 생성하지 않는다. 기존 테이블 검색은 직접 SQL, 벡터 매핑은 `hibernate-vector`를 사용한다.
 - 전체 빌드에 막혔던 기존 `CustomerWiki`의 누락된 `BaseTimeEntity` 참조를 기존 `BaseEntity`로 수정했다.
 
 ## 로컬 접속 및 실행
@@ -55,7 +55,7 @@ nmake /F Makefile.win install
 
 ## 검증 상태 및 재실행
 
-- `gradlew.bat build --offline`로 컴파일·패키징 및 DB 없는 Hibernate 매핑/Repository 파생 쿼리 생성 검사를 실행한다.
+- `gradlew.bat build --offline`로 컴파일·패키징 및 DB 없는 Hibernate 엔티티 매핑 검사를 실행한다.
 - `WONMATE_DB_URL`이 없으면 기존 context 테스트와 `RagPostgresTests`는 명시적으로 skip한다. 이는 실제 DB 테스트 성공을 의미하지 않는다.
 - 접속 환경 변수 3개가 모두 설정되고 스키마가 준비되면 `gradlew.bat test --tests '*RagPostgresTests' --rerun-tasks`로 실제 저장/조회, 관계, auditing, nullable 벡터 및 1536차원 값의 왕복, 문서 내 청크 번호 중복 거부, 실제 DB 타입·확장 확인을 수행한다. 테스트 데이터는 트랜잭션 롤백된다. ID 시퀀스 값은 소비될 수 있으므로 테스트 DB 사용을 권장한다.
 - SQL 검증 결과에서 두 FK, `(document_id, chunk_index)` UNIQUE 및 `embedding = vector(1536)`을 확인한다. 페이지는 1부터, chunkIndex는 0부터 시작한다.

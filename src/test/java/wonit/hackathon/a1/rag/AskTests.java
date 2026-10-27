@@ -64,53 +64,6 @@ class AskTests {
             appender.stop();
         }
     }
-    @Test void comparisonSearchesEachProductIndependentlyEvenWithSmallTopK() {
-        var comparison = new AskRequest("암 보장 상품 비교", QuestionType.PRODUCT_COMPARISON, null, 1);
-        var first = mock(wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct.class);
-        var second = mock(wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct.class);
-        when(first.getId()).thenReturn(6L);
-        when(second.getId()).thenReturn(7L);
-        when(products.findAll()).thenReturn(List.of(first, second));
-        when(search.search(any())).thenAnswer(invocation -> {
-            SearchRequest r = invocation.getArgument(0);
-            long id = r.productIds().getFirst();
-            return List.of(chunk(id, id));
-        });
-        when(chat.generate(any(), anyList(), anyMap())).thenReturn(new ChatClient.Generated("차이 및 면책", List.of(1, 2)));
-        assertEquals(2, service.ask(comparison).sources().size());
-        for (long id : List.of(6L, 7L)) {
-            verify(search).search(argThat(r -> r.productIds().equals(List.of(id)) && r.documentTypes().equals(List.of(DocumentType.SUMMARY))));
-            verify(search).search(argThat(r -> r.productIds().equals(List.of(id)) && r.question().contains("면책 감액")));
-        }
-        verify(products).findAll();
-    }
-    @Test void namedComparisonPreservesBothSimilarProductsEvenWhenSummaryEvidenceIsAbsent() {
-        var first = mock(wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct.class);
-        var second = mock(wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct.class);
-        var other = mock(wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct.class);
-        when(first.getId()).thenReturn(12L);
-        when(second.getId()).thenReturn(11L);
-        when(other.getId()).thenReturn(13L);
-        when(first.getProductName()).thenReturn("무배당우리WON하는실속하나로암보험");
-        when(second.getProductName()).thenReturn("무배당우리WON하는실속플러스하나로암보험");
-        when(other.getProductName()).thenReturn("다른보험");
-        when(products.findAll()).thenReturn(List.of(first, second, other));
-        when(search.search(any())).thenAnswer(invocation -> {
-            SearchRequest r = invocation.getArgument(0);
-            if (r.documentTypes().equals(List.of(DocumentType.SUMMARY))) return List.of();
-            long id = r.productIds().getFirst();
-            return List.of(chunk(id, id));
-        });
-        when(chat.generate(any(), anyList(), anyMap()))
-                .thenReturn(new ChatClient.Generated("상품별 차이는 추가 확인 필요", List.of(1, 2)));
-        var input = new AskRequest("우리WON하는실속하나로암보험과 실속플러스하나로암보험의 암 진단비 차이를 비교해줘",
-                QuestionType.PRODUCT_COMPARISON, null, 1);
-        assertEquals(List.of(11L, 12L), service.ask(input).sources().stream().map(AskResponse.Source::productId).toList());
-        verify(search, never()).search(argThat(r -> r.productIds().contains(13L)));
-        verify(search, times(6)).search(any());
-        verify(chat).generate(eq(input), argThat(chunks -> chunks.stream().map(SearchResult::productId).distinct().count() == 2), anyMap());
-    }
-
     @Test void doesNotBlacklistMisleadingHeadingWhenBodyHasDiagnosisPaymentEvidence() {
         var mixed = new SearchResult(7258L, 21L, 6L, "약관.pdf", DocumentType.TERMS,
                 "제45조 【예금보험에 의한 지급보장】", null, 51, 52,
@@ -119,13 +72,13 @@ class AskTests {
         when(chat.generate(any(), anyList(), anyMap())).thenReturn(new ChatClient.Generated("지급 예시 조건 확인", List.of(1)));
         assertEquals(7258L, service.ask(request).sources().getFirst().chunkId());
     }
-    @Test void recommendationExploresCatalogAndRedactsIdentifiersBeforeExternalCalls() {
+    @Test void conceptExploresCatalogAndRedactsIdentifiersBeforeExternalCalls() {
         var product = mock(wonit.hackathon.a1.domain.insurance.entity.InsuranceProduct.class);
         when(product.getId()).thenReturn(6L);
         when(products.findAll()).thenReturn(List.of(product));
         when(search.search(any())).thenReturn(List.of(chunk(1, 6)));
-        when(chat.generate(any(), anyList(), anyMap())).thenReturn(new ChatClient.Generated("FC 검토 후보", List.of(1)));
-        service.ask(new AskRequest("이름: 홍길동, 010-1234-5678, 52세 월 50000원 암 진단비 우선 추천", QuestionType.PRODUCT_RECOMMENDATION, null, 5));
+        when(chat.generate(any(), anyList(), anyMap())).thenReturn(new ChatClient.Generated("보험 개념 설명", List.of(1)));
+        service.ask(new AskRequest("이름: 홍길동, 010-1234-5678, 52세 월 50000원 암 진단비와 입원 보장 개념 설명", QuestionType.INSURANCE_CONCEPT, null, 5));
         verify(products).findAll();
         verify(chat).generate(argThat(r -> !r.question().contains("홍길동") && !r.question().contains("010-1234")
                 && r.question().contains("50000") && r.question().contains("52세")), anyList(), anyMap());

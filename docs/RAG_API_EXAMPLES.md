@@ -1,6 +1,6 @@
 # 통합 보험 상담 RAG API 사용 예시
 
-현재 구현 기준 문서다. 처리 흐름·검색 품질 점검·검증 결과와 한계는 [6단계 구현 문서](RAG_STAGE6_IMPLEMENTATION.md)를 참고한다.
+현재 구현 기준 문서다. 모델 호출 구성은 [Spring AI 전환 문서](RAG_SPRING_AI.md)를 참고한다. 처리 흐름·검색 품질 점검·검증 결과와 한계는 [6단계 구현 문서](RAG_STAGE6_IMPLEMENTATION.md)를 참고한다.
 
 ## API와 프론트 입력 흐름
 
@@ -8,22 +8,20 @@
 - Content-Type: `application/json; charset=utf-8`
 - 응답: 최상위 `answer`, `sources` 유지.
 - 사용자는 질문 유형을 선택하고 자연어 질문을 입력한다. **상품 설명일 때만 상품 하나를 선택한다.**
-- 비교·추천용 별도 `/compare`, `/recommend` API는 없다.
+- 지원 유형은 용어 설명, 보험 개념 설명, 단일 상품 설명이다.
 
 | 필드 | 타입 | 조건 | 설명 |
 | --- | --- | --- | --- |
-| question | string | 필수, 공백 불가, 최대 2,000자 | 현재 질문과 필요한 고객 선호를 자연어로 입력 |
-| questionType | string enum | 필수 | 아래 5가지 유형 중 하나 |
+| question | string | 필수, 공백 불가, 최대 2,000자 | 설명받을 질문을 자연어로 입력 |
+| questionType | string enum | 필수 | 아래 3가지 유형 중 하나 |
 | productId | integer | 상품 설명에만 필수, 양수 | 문서 ID가 아닌 보험상품 ID. 다른 유형에는 생략/null |
-| topK | integer | 선택, 기본 5, 범위 1~20 | 검색 1회당 청크 수. 최종 출처 수나 추천 상품 수가 아님 |
+| topK | integer | 선택, 기본 5, 범위 1~20 | 검색 1회당 청크 수. 최종 출처 수가 아님 |
 
 | 화면 표시 | questionType | 상품 선택 |
 | --- | --- | --- |
 | 용어 설명 | TERM_EXPLANATION | 없음 |
 | 보험 개념 설명 | INSURANCE_CONCEPT | 없음 |
 | 상품 설명 | PRODUCT_EXPLANATION | 단일 productId 필수 |
-| 상품 비교 | PRODUCT_COMPARISON | 없음. 비교할 상품명이나 관심 보장을 질문에 입력 |
-| 상품 추천 | PRODUCT_RECOMMENDATION | 없음. 나이·예산·관심 보장·우선순위를 질문에 입력 |
 
 유형 변경 시 프론트는 이전 productId를 비운다. 과거의 productIds 배열과 질문 자동 분류 방식은 현재 요청 계약에 해당하지 않는다.
 
@@ -77,51 +75,7 @@ productId 없이 요청한다. 일반 개념 질문도 현재는 RAG 문서 근�
 }
 ```
 
-### 4. 이름을 지정한 두 상품 비교
-
-```json
-{
-  "questionType": "PRODUCT_COMPARISON",
-  "question": "우리WON하는실속하나로암보험과 실속플러스하나로암보험의 암 진단비 차이를 비교해줘",
-  "topK": 5
-}
-```
-
-카탈로그의 정식 상품명과 제한적인 접두사·공백 생략을 대조해 각 상품에서 검색한다. 비슷한 이름이어도 서로 다른 상품으로 취급한다. 양쪽에서 독립적으로 확인한 조건만 동일하다고 설명하고, 전체 보장 동일이나 우열로 확대하지 않는다. 오탈자나 임의의 약칭은 정확히 인식하지 못할 수 있다.
-
-### 5. 고객 상황을 바탕으로 후보 상품 비교
-
-```json
-{
-  "questionType": "PRODUCT_COMPARISON",
-  "question": "자녀가 7살이고 입원비가 걱정되는 고객이야. 어린이 보험 후보들의 입원 보장과 면책 조건을 비교해줘"
-}
-```
-
-특정 상품명이 없으면 기존 상품 목록에서 요약서 관련도로 최대 5개 후보를 탐색한 뒤 후보별 약관을 확인한다. 해당 보장의 근거가 부족하거나 비교 가능한 상품이 2개 미만이면 비교 불가 또는 추가 확인 필요로 안내한다. 모든 어린이 보험을 빠짐없이 비교하는 기능은 아니다.
-
-### 6. 고객 조건 기반 상품 추천
-
-```json
-{
-  "questionType": "PRODUCT_RECOMMENDATION",
-  "question": "52세 고객에게 암 진단비를 우선으로, 월 5만원 이내 보험 상품을 추천해줘",
-  "topK": 5
-}
-```
-
-고객 조건은 별도의 customer DTO 대신 question에 입력한다. 고객 이름·연락처 등은 필요하지 않다. customers/consultations를 조회하지 않는다.
-
-권장 답변 구성은 다음과 같다. 실제 응답을 고정된 추천 DTO로 반환하는 것은 아니며 `answer` 문자열 안에 자연어/Markdown으로 작성한다.
-
-1. 검토 결과 요약: 고객 나이·희망 예산·우선 보장을 짧게 정리.
-2. 추천 후보 및 선정 근거: 정식 상품명, 고객 요구와 연결된 보장, 확인된 지급·제한 조건.
-3. 고객 조건 충족 여부: 연령·예산·우선 보장을 각각 충족 확인/미충족 확인/확인 필요로 표현.
-4. 추가 확인 사항: 실제 설계 보험료·가입 조건·심사·가입금액·특약 등.
-
-보험료 산출 근거와 가입 연령 조건이 없으면 예산 충족과 가입 가능 여부를 단정하지 않는다. 최종 가입 권유가 아닌 FC의 우선 검토 후보로 안내한다. 근거 없는 상품을 후보 수를 채우기 위해 추천하지 않는다.
-
-### 7. 상품 미지정 약관 질문
+### 4. 상품 미지정 약관 질문
 
 ```json
 {
@@ -137,10 +91,10 @@ productId 없이 요청한다. 일반 개념 질문도 현재는 RAG 문서 근�
 PowerShell 예시다. 아래 주소는 개발 서버의 예시이며 실제 서버 주소·포트에 맞춰 변경한다.
 
 ```powershell
-$ragBaseUrl = 'http://localhost:8080'
+$ragBaseUrl = 'http://localhost:8081'
 $ragBody = @{
-    questionType = 'PRODUCT_RECOMMENDATION'
-    question = '52세 고객에게 암 진단비를 우선으로, 월 5만원 이내 보험 상품을 추천해줘'
+    questionType = 'TERM_EXPLANATION'
+    question = '면책기간과 감액기간의 차이를 설명해줘'
     topK = 5
 } | ConvertTo-Json
 
@@ -149,7 +103,7 @@ Invoke-RestMethod -Method Post -Uri "$ragBaseUrl/api/rag/ask" `
     -Body ([System.Text.Encoding]::UTF8.GetBytes($ragBody))
 ```
 
-현재 구현은 한 요청의 질문만 처리한다. 후속 질문에 필요한 유형·상품·고객 선호를 다시 포함한다. “그 상품은?”처럼 앞 대화만 참조하는 질문을 해석하는 서버 대화 메모리는 없다.
+현재 구현은 한 요청의 질문만 처리한다. 후속 질문에 필요한 유형·상품을 다시 포함한다. “그 상품은?”처럼 앞 대화만 참조하는 질문을 해석하는 서버 대화 메모리는 없다.
 
 ## 응답과 출처 해석
 
@@ -157,7 +111,7 @@ Invoke-RestMethod -Method Post -Uri "$ragBaseUrl/api/rag/ask" `
 
 ```json
 {
-  "answer": "암 진단비를 우선하는 검토 요청입니다. 가입 연령 조건과 실제 설계 보험료를 확인할 자료가 부족해 52세 가입 가능 여부와 월 5만원 예산 충족 여부는 확인이 필요합니다. 확인된 보장과 제한 조건을 바탕으로 FC가 후보를 검토하고 별도 설계·심사를 진행해야 합니다.",
+  "answer": "암 진단비 지급 조건과 면책·감액 조건을 함께 확인해야 합니다. 지급 예시에는 기준 가입금액과 적용 조건이 있습니다.",
   "sources": [
     {
       "productId": 12,
@@ -221,19 +175,21 @@ LLM은 DB ID 대신 요청 내 evidenceIndex만 받는다. 생성 결과의 evid
 }
 ```
 
-추천인데 productId를 전송한 경우:
+용어 설명인데 productId를 전송한 경우:
 
 ```json
 {
-  "questionType": "PRODUCT_RECOMMENDATION",
+  "questionType": "TERM_EXPLANATION",
   "productId": 12,
-  "question": "암 보험을 추천해줘"
+  "question": "면책기간의 뜻을 설명해줘"
 }
 ```
 
 그 외 questionType 누락/알 수 없는 값, 공백 질문, 0 이하 productId, 배열 형태 productId, 범위를 벗어난 topK도 검증 대상이다. 존재하지 않는 양수 상품 ID는 입력 형식 오류와 다르며 검색 근거가 없어 확인 불가 응답이 될 수 있다.
 
-## 상품 ID 확인과 환경 조건
+## 문서 적재 및 상품 ID 확인
+
+PDF 임베딩·청크 적재는 프로젝트 루트에서 `gradlew.bat ragIngest`를 실행하는 CLI 방식만 지원한다. HTTP 문서 적재·업로드 API는 제공하지 않으며, 새 파일 추가나 서버 시작으로 자동 임베딩하지 않는다. 다른 컴퓨터의 초기 설정과 실행 명령은 [documents 적재 가이드](RAG_LOCAL_LOAD_GUIDE.md)를 참고한다.
 
 `GET /api/documents`에서 문서의 productId, documentId, path, status, hash, chunkCount를 확인할 수 있다. 같은 상품의 약관·요약서에는 동일 productId와 서로 다른 documentId가 연결된다. 현재 이 목록 API는 local 프로필 전용이므로 운영 환경의 상품 선택 목록 API를 대신한다고 가정하지 않는다. 목록 응답에 정식 상품명 필드는 없다.
 

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RetrievalQueryTests {
     @Test void prioritizesDiagnosisPaymentAndRestrictionsWhilePreservingOtherRequirements() {
-        String question = "52세 고객에게 암 진단비와 입원 보장을 우선으로 월 5만원 이내 보험 추천해줘";
+        String question = "이 상품의 암 진단비와 입원 보장의 지급 조건을 설명해줘";
         var query = RetrievalQuery.from(question);
         assertTrue(query.summary().startsWith("암 진단비"));
         assertTrue(query.terms().contains("지급기준표"));
