@@ -8,6 +8,9 @@ import org.springframework.data.repository.query.Param;
 import wonit.hackathon.a1.domain.customer.entity.Customer;
 import wonit.hackathon.a1.domain.fccustomer.enums.AssignmentStatus;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+
 import java.util.Optional;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
@@ -60,6 +63,16 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
             @Param("fcId") Long fcId,
             @Param("customerId") Long customerId,
             @Param("status") AssignmentStatus status
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select c
+        from Customer c
+        where c.id = :customerId
+        """)
+    Optional<Customer> findByIdForUpdate(
+            @Param("customerId") Long customerId
     );
 
 }
