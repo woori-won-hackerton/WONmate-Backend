@@ -66,4 +66,15 @@ public interface ConsultRepository extends JpaRepository<Consult, Long> {
     @Query("select c from Consult c where c.id = :id")
     Optional<Consult> findByIdForBriefingUpdate(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select c
+        from Consult c
+        where c.id = :consultationId
+          and c.fcCustomer.user.id = :fcId
+        """)
+    Optional<Consult> findOwnedForCompletion(
+            @Param("consultationId") Long consultationId,
+            @Param("fcId") Long fcId
+    );
 }
