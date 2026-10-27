@@ -1,13 +1,14 @@
-
 server:
   port: 8081
-spring:
 
+spring:
   autoconfigure:
     exclude:
       - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+
   application:
     name: a1
+
   datasource:
     url: jdbc:postgresql://localhost:5432/${DB_NAME}
     username: ${DB_USERNAME}
@@ -18,18 +19,17 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
 
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiration-seconds: 1800
   issuer: cgv-api
-
-
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY}
-      chat:
-        model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
 
 app:
   briefing:
