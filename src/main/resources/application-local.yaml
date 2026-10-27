@@ -27,7 +27,7 @@ spring:
   jpa:
     hibernate:
       # 구축된 스키마만 검증하며 시작 시 테이블 생성이나 변경을 수행하지 않는다.
-      ddl-auto: create
+      ddl-auto: validate
     show-sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect

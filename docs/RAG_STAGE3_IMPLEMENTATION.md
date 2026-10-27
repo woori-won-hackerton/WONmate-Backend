@@ -10,7 +10,7 @@
 | `controller/rag/DocumentController` | 로컬 적재 POST와 저장 목록 GET을 제공한다. Swagger 태그·API 설명·파라미터 설명과 단일 문서 경로 예시를 추가했다. |
 | `dto/rag` | 적재 집계, 문서별 처리 결과, 저장 문서 목록을 타입이 있는 record로 분리하고 Swagger 필드 설명/예시를 추가했다. |
 | `global/config/rag/RagConfiguration` | PDF 추출기와 청커를 Spring 빈으로 구성한다. 순수 PDF 처리 클래스는 Spring 없이 CLI에서도 사용한다. |
-| `domain/insurance/entity/ProductDocument` | 청크 교체와 함께 해시·버전·적용일·모델·완료 상태를 갱신하는 `completeReplacement`를 추가했다. |
+| `domain/insurance/entity/ProductDocument` | 청크 교체와 함께 해시·모델·완료 상태를 갱신하는 `completeReplacement`를 추가했다. |
 | 패키지 및 `build.gradle` | `domain`에는 엔티티와 enum만 남겼다. 컨트롤러/서비스/Repository/클라이언트/DTO/순수 PDF 코드를 루트의 각 패키지로 이동하고 테스트 import와 `ragDebug` 진입점을 갱신했다. |
 | `application-local.yaml` | 배치 크기·타임아웃·재시도 설정과 원본 경로 주석을 추가했다. 현재 로컬 서버 포트는 8081이다. |
 | 테스트 | 실제 HTTP 대신 로컬 서버로 오류를 재현하는 테스트, 실제 PostgreSQL 교체/롤백 테스트, 명시적으로 켜는 OpenAI 스모크 테스트를 추가했다. |
@@ -95,15 +95,13 @@ OPENAI_API_KEY=<OpenAI API 키>
   "documents": [
     {
       "fileName": "상품요약서_무배당엔젤쑥쑥어린이보장보험_20260901_00.pdf",
-      "documentType": "SUMMARY",
-      "version": null,
-      "effectiveDate": null
+      "documentType": "SUMMARY"
     }
   ]
 }
 ```
 
-문서 유형은 `TERMS` 또는 `SUMMARY`다. 적용일을 확인했다면 `effectiveDate`는 `2026-09-01` 같은 ISO 날짜로 입력한다. 파일명에 날짜가 있다고 자동으로 적용일을 추정하지 않는다. 명시한 `productId`가 DB에 없으면 상품명이 일치하더라도 우회 매핑하지 않는다.
+문서 유형은 `TERMS` 또는 `SUMMARY`다. 명시한 `productId`가 DB에 없으면 상품명이 일치하더라도 우회 매핑하지 않는다.
 
 ### 2. Swagger 열기
 
@@ -198,7 +196,7 @@ GET의 `path`는 저장 경로라 기본적으로 `documents/`로 시작한다. 
 | 상품 필터 | 실제 매핑된 `productId`를 입력하고 `documentPath`를 비움 | 해당 상품의 문서만 처리. ID가 틀리면 일치 결과 0건일 수 있음. |
 | 일괄 적재 | 단일 문서 성공과 재요청 생략을 확인한 후 두 파라미터를 모두 비우고 실행 | 기존 완료 문서는 생략, 신규/변경 문서는 저장. 일부 실패해도 다른 완료 결과 보존. |
 
-파일명이나 경로를 바꾸면 문서 식별자가 달라져 **새 문서**가 된다. 변경 문서 테스트는 같은 경로에서 PDF 바이너리 내용을 바꿔야 한다. 메타데이터의 버전/적용일만 바꾸고 PDF 해시가 같다면 현재 구현은 기존 완료 문서를 생략한다.
+파일명이나 경로를 바꾸면 문서 식별자가 달라져 **새 문서**가 된다. 변경 문서 테스트는 같은 경로에서 PDF 바이너리 내용을 바꿔야 한다.
 
 API 오류나 DB 교체 도중 실패까지 재현하는 검증은 아래 자동 테스트를 사용한다. Swagger에서 무작정 같은 요청을 재시도하거나 일괄 적재부터 실행하지 않는다. 문서별 `reason`에는 `IllegalStateException`, `IOException` 같은 오류 종류만 표시될 수 있으며 상세 HTTP 코드는 서버의 안전한 로그에서 확인한다.
 

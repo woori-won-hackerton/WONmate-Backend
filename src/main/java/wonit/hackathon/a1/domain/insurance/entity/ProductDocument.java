@@ -1,7 +1,6 @@
 package wonit.hackathon.a1.domain.insurance.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,13 +39,6 @@ public class ProductDocument extends BaseEntity {
     @Column(name = "file_hash", nullable = false, length = 64)
     private String fileHash;
 
-    @Column(name = "document_version", length = 100)
-    private String documentVersion;
-
-    /** 문서에서 적용일이 확인된 경우에만 기록한다. 파일명 날짜는 적용일로 간주하지 않는다. */
-    @Column(name = "effective_date")
-    private LocalDate effectiveDate;
-
     // 신규 문서는 대기 상태로 등록한다. 실제 처리와 상태 전이는 이후 적재 단계에서 수행한다.
     @Enumerated(EnumType.STRING)
     @Column(name = "ingestion_status", nullable = false, length = 20)
@@ -56,8 +48,7 @@ public class ProductDocument extends BaseEntity {
     private String embeddingModel;
 
     private ProductDocument(InsuranceProduct insuranceProduct, String documentName,
-                            DocumentType documentType, String storageUrl, String fileHash,
-                            String documentVersion, LocalDate effectiveDate) {
+                            DocumentType documentType, String storageUrl, String fileHash) {
         this.insuranceProduct = Objects.requireNonNull(insuranceProduct, "insuranceProduct");
         this.documentName = Objects.requireNonNull(documentName, "documentName");
         this.documentType = Objects.requireNonNull(documentType, "documentType");
@@ -66,15 +57,12 @@ public class ProductDocument extends BaseEntity {
             throw new IllegalArgumentException("fileHash must be a SHA-256 hexadecimal digest");
         }
         this.fileHash = fileHash;
-        this.documentVersion = documentVersion;
-        this.effectiveDate = effectiveDate;
     }
 
     public static ProductDocument create(InsuranceProduct insuranceProduct, String documentName,
-                                         DocumentType documentType, String storageUrl, String fileHash,
-                                         String documentVersion, LocalDate effectiveDate) {
+                                         DocumentType documentType, String storageUrl, String fileHash) {
         return new ProductDocument(insuranceProduct, documentName, documentType, storageUrl,
-                fileHash, documentVersion, effectiveDate);
+                fileHash);
     }
 
     public void updateIngestionStatus(IngestionStatus ingestionStatus) {
@@ -86,11 +74,9 @@ public class ProductDocument extends BaseEntity {
     }
 
     /** 새 청크 저장과 같은 트랜잭션에서만 호출해 본문·해시·모델·완료 상태의 일관성을 맞춘다. */
-    public void completeReplacement(String hash, String version, LocalDate date) {
+    public void completeReplacement(String hash) {
         if (hash == null || !hash.matches("[0-9a-f]{64}")) throw new IllegalArgumentException("Invalid hash");
         this.fileHash = hash;
-        this.documentVersion = version;
-        this.effectiveDate = date;
         this.embeddingModel = "text-embedding-3-small";
         this.ingestionStatus = IngestionStatus.COMPLETED;
     }

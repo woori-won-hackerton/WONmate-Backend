@@ -2,7 +2,6 @@ package wonit.hackathon.a1.service.rag;
 
 import java.nio.file.*;
 import java.security.MessageDigest;
-import java.time.LocalDate;
 import java.util.*;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -97,10 +96,8 @@ public class DocumentIngestionService {
             if (vectors.size() != chunks.size()) throw new IllegalStateException("Embedding count mismatch");
             // 처리 중 파일이 바뀌었다면 오래된 본문/벡터를 새 파일의 결과로 저장하지 않는다.
             if (!hash.equals(hash(pdf))) throw new IllegalStateException("PDF changed during processing");
-            String version = nullable(doc, "version"), date = nullable(doc, "effectiveDate");
-            LocalDate effective = date == null ? null : LocalDate.parse(date);
             boolean saved = repository.replace(productId, type, storage, pdf.getFileName().toString(), hash,
-                    version, effective, chunks, vectors);
+                    chunks, vectors);
             results.add(new IngestionResult(relative, saved ? "COMPLETED" : "SKIPPED", saved ? chunks.size() : 0, null,
                     pages.stream().filter(PdfExtractor.Page::needsOcr).map(PdfExtractor.Page::number).toList()));
         } catch (Exception e) { results.add(failure(relative, e)); }
@@ -112,7 +109,6 @@ public class DocumentIngestionService {
         return new IngestionResult(path, "FAILED", 0, e.getClass().getSimpleName(), List.of());
     }
 
-    private String nullable(JsonNode doc, String field) { return doc.path(field).isTextual() ? doc.path(field).asString() : null; }
 
     private String hash(Path pdf) throws Exception {
         // 큰 PDF 전체를 메모리에 올리지 않고 스트림으로 바이너리 해시를 계산한다.

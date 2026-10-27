@@ -39,7 +39,7 @@ class RagPostgresTests {
         var product = InsuranceProduct.create("RAG mapping test", null, null, "TEST", null, null);
         entityManager.persist(product);
         return documents.saveAndFlush(ProductDocument.create(product, "통합약관_테스트.pdf",
-                DocumentType.TERMS, "documents/test/통합약관_테스트.pdf", "a".repeat(64), null, null));
+                DocumentType.TERMS, "documents/test/통합약관_테스트.pdf", "a".repeat(64)));
     }
 
     @Test

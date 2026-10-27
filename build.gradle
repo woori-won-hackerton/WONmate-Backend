@@ -58,3 +58,11 @@ tasks.register('ragDebug', JavaExec) {
 	mainClass = 'wonit.hackathon.a1.rag.RagDebug'
 	maxHeapSize = '2g'
 }
+
+tasks.register('ragIngest', JavaExec) {
+	group = 'application'
+	description = 'Register missing products from local metadata and embed/ingest PDFs into the configured database.'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'wonit.hackathon.a1.rag.RagIngest'
+	maxHeapSize = '2g'
+}

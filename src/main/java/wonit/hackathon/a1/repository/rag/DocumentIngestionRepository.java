@@ -2,7 +2,6 @@ package wonit.hackathon.a1.repository.rag;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +50,7 @@ public class DocumentIngestionRepository {
      */
     @Transactional
     public boolean replace(Long productId, DocumentType type, String storage, String name, String hash,
-                           String version, LocalDate effective, List<ArticleChunker.Chunk> chunks,
+                           List<ArticleChunker.Chunk> chunks,
                            List<float[]> vectors) {
         if (chunks.isEmpty() || chunks.size() != vectors.size()) throw new IllegalArgumentException("Invalid replacement chunks");
         // 신규 문서는 잠글 행이 없으므로 상품 ID·문서 유형·경로 기반의 트랜잭션 잠금을 사용한다.
@@ -61,10 +60,10 @@ public class DocumentIngestionRepository {
         // 잠금을 기다리는 동안 다른 프로세스가 완료했을 수 있으므로 다시 검사한다.
         if (completed(existing, hash)) return false;
         var entity = existing.isEmpty() ? ProductDocument.create(em.getReference(InsuranceProduct.class, productId),
-                name, type, storage, hash, version, effective) : existing.getFirst();
+                name, type, storage, hash) : existing.getFirst();
         if (existing.isEmpty()) em.persist(entity);
         else em.createQuery("delete from ProductChunk c where c.productDocument.id=:id").setParameter("id", entity.getId()).executeUpdate();
-        entity.completeReplacement(hash, version, effective);
+        entity.completeReplacement(hash);
         for (int i = 0; i < chunks.size(); i++) {
             var c = chunks.get(i);
             if (vectors.get(i) == null) throw new IllegalArgumentException("Missing embedding");

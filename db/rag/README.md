@@ -1,5 +1,7 @@
 # RAG 도메인 DB 설정 (1단계)
 
+기존 DB에서 문서 버전·적용일 필드를 제거하려면 `03-remove-document-version-fields.sql`을 명시적으로 실행한다. 신규 생성 SQL에는 해당 필드가 없다. 문서와 청크·임베딩은 유지된다.
+
 ## 확인한 프로젝트 상태
 
 - Java 21, Gradle 9.8.2, 실제 Spring Boot **4.1.2**, Hibernate **7.4.13.Final**. 요청의 Boot 3.x와 달라 기존 버전을 유지했다.

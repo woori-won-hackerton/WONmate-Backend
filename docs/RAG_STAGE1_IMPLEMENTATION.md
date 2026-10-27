@@ -25,13 +25,11 @@
 | documentType | document_type | TERMS / SUMMARY |
 | storageUrl | storage_url | 프로젝트 루트 기준 로컬 PDF 상대 경로 |
 | fileHash | file_hash | SHA-256, 64자리 16진수 검증 |
-| documentVersion | document_version | 확인된 문서 버전, nullable |
-| effectiveDate | effective_date | 확인된 적용일, nullable |
 | ingestionStatus | ingestion_status | PENDING / PROCESSING / COMPLETED / FAILED |
 | embeddingModel | embedding_model | 임베딩 모델명, nullable |
 | createdAt / updatedAt | created_at / updated_at | BaseEntity의 JPA auditing 사용 |
 
-신규 문서의 상태는 `PENDING`이다. 파일명 날짜는 적용일로 간주하지 않는다. 생성 메서드에 전달된 파일명과 경로를 저장하며, 현재 도메인 코드가 PDF를 열거나 파일 해시를 계산하지는 않는다.
+신규 문서의 상태는 `PENDING`이다. 생성 메서드에 전달된 파일명과 경로를 저장하며, 현재 도메인 코드가 PDF를 열거나 파일 해시를 계산하지는 않는다.
 
 기존 `storage_uri` 필드는 `storage_url`로 변경했다. Java PK 이름은 기존 스타일에 맞춰 `id`를 유지했다.
 
@@ -131,7 +129,7 @@ DB 테스트는 `WONMATE_DB_URL`이 **프로세스 환경 변수로 존재할 �
 
 - `CustomerWiki`의 존재하지 않는 `BaseTimeEntity` 참조를 프로젝트에 있는 `BaseEntity`로 수정했다.
 - `.gitignore`에 `.env`와 `/documents/` 제외 설정이 있다. 로컬 PDF·metadata는 보관하지만 현재 Git 변경에는 포함되지 않는다.
-- 문서 경로, 실제 적용일 확인 기준, 기본 처리 상태에 주석을 추가했다.
+- 문서 경로, 기본 처리 상태에 주석을 추가했다.
 - 벡터 차원·복사 정책, 페이지 및 청크 번호 기준에 주석을 추가했다.
 - DB 테스트 실행 조건, 롤백 범위, 테스트용 가상 파일 경로·해시와 1차 캐시 제거 이유를 설명했다.
 - 현재 스테이징 여부를 변경하거나 실제 Git 커밋을 생성하지 않았다.
@@ -143,7 +141,7 @@ DB 테스트는 `WONMATE_DB_URL`이 **프로세스 환경 변수로 존재할 �
 ```text
 feat: RAG 문서·청크 도메인 및 PostgreSQL 기반 구성 추가
 
-- ProductDocument에 파일 해시, 문서 버전, 적용일, 처리 상태와 auditing 추가
+- ProductDocument에 파일 해시, 처리 상태와 auditing 추가
 - ProductChunk에 페이지 범위, 조항 정보 및 vector(1536) 매핑 반영
 - 문서 유형·처리 상태 enum과 상품별 문서·문서별 청크 조회 Repository 추가
 - pgvector 및 기존 enum 준비, RAG 테이블 생성·검증 SQL 작성

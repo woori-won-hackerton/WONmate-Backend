@@ -11,8 +11,6 @@ CREATE TABLE public.product_documents (
     document_type varchar(20) NOT NULL,
     storage_url text NOT NULL,
     file_hash varchar(64) NOT NULL,
-    document_version varchar(100),
-    effective_date date,
     ingestion_status varchar(20) NOT NULL DEFAULT 'PENDING',
     embedding_model varchar(255),
     created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
