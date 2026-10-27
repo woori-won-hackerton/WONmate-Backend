@@ -1,4 +1,3 @@
-
 server:
   port: 8081
 spring:
@@ -26,6 +25,10 @@ spring:
       chat:
         options:
           model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
+      # RAG 임베딩 (product_chunks.embedding 이 1536차원이라 바꾸면 문서를 다시 적재해야 함)
+      embedding:
+        options:
+          model: text-embedding-3-small
 
 
 jwt:
@@ -36,3 +39,18 @@ jwt:
 app:
   briefing:
     model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
+
+# AI 챗봇 (RAG)
+rag:
+  # 약관 · 상품요약서 PDF 폴더 (상품 폴더마다 metadata.json)
+  documents-dir: ${RAG_DOCUMENTS_DIR:documents}
+  # true면 서버 시작 시 문서를 백그라운드로 적재 (이미 적재한 파일은 건너뜀)
+  ingest-on-startup: ${RAG_INGEST_ON_STARTUP:false}
+  embedding:
+    batch-size: 32
+    retries: 3
+  chunking:
+    target-tokens: 750
+    max-tokens: 1000
+    overlap-tokens: 80
+    chars-per-token: 1.5
