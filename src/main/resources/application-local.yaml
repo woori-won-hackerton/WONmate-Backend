@@ -42,7 +42,7 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY}              # 🚨 키는 환경변수에서만 읽는다
       chat:
-        model: ${AI_MODEL:gpt-6-luna}  # 수업 당일 사이트에서 저렴한 모델 이름 확인
+        model: ${OPENAI_CHAT_MODEL:gpt-6-luna}
       embedding:
         dimensions: 1536
         model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
